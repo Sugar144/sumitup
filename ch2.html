@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 2: Decomposition Strategies — Microservices Patterns Study Guide</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body id="top">
+
+<header class="chapter-header">
+  <div class="breadcrumb"><a href="index.html">Study Guide</a> &rsaquo; Chapter 2</div>
+  <h1>Chapter 2: Decomposition Strategies</h1>
+  <p class="chapter-desc">How to define your application's microservice architecture — from understanding software architecture, through decomposition patterns, to defining service APIs.</p>
+</header>
+
+<nav class="nav-bar">
+  <a href="index.html">Home</a>
+  <a href="ch1.html">Ch 1</a>
+  <a href="ch2.html" class="active">Ch 2</a>
+  <a href="ch3.html">Ch 3</a>
+  <a href="ch4.html">Ch 4</a>
+  <a href="ch5.html">Ch 5</a>
+  <a href="ch7.html">Ch 7</a>
+</nav>
+
+<div class="page-container">
+
+  <div class="stats-bar">
+    <span class="stat-badge">6 Patterns</span>
+    <span class="stat-badge">17 Definitions</span>
+    <span class="stat-badge">6 Principles</span>
+    <span class="stat-badge">5 Problems</span>
+    <span class="stat-badge">5 Tradeoffs</span>
+    <span class="stat-badge">2 Technologies</span>
+    <span class="stat-badge">41 Total Concepts</span>
+  </div>
+
+  <!-- ===== TABLE OF CONTENTS ===== -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li class="toc-section">
+        <a href="#s2-1">2.1 What is the microservice architecture exactly?</a>
+        <ol>
+          <li><a href="#s2-1-1">What is software architecture and why does it matter?</a></li>
+          <li><a href="#s2-1-2">Overview of architectural styles</a></li>
+          <li><a href="#s2-1-3">The microservice architecture is an architectural style</a></li>
+        </ol>
+      </li>
+      <li class="toc-section">
+        <a href="#s2-2">2.2 Defining an application's microservice architecture</a>
+        <ol>
+          <li><a href="#s2-2-1">Identifying the system operations</a></li>
+          <li><a href="#s2-2-2">Defining services by applying the Decompose by business capability pattern</a></li>
+          <li><a href="#s2-2-3">Defining services by applying the Decompose by sub-domain pattern</a></li>
+          <li><a href="#s2-2-4">Decomposition guidelines</a></li>
+          <li><a href="#s2-2-5">Obstacles to decomposing an application into services</a></li>
+          <li><a href="#s2-2-6">Defining service APIs</a></li>
+        </ol>
+      </li>
+      <li class="toc-section"><a href="#takeaways">Key Takeaways</a></li>
+    </ol>
+  </div>
+
+  <!-- ===== 2.1 ===== -->
+  <h2 class="section-title" id="s2-1">2.1 What is the microservice architecture exactly?</h2>
+
+  <!-- 2.1.1 -->
+  <div class="content-section" id="s2-1-1">
+    <h3 class="subsection-title">What is software architecture and why does it matter?</h3>
+
+    <p>Software architecture is the decomposition of a system into parts (elements) plus the relationships between those parts. This definition comes from Bass and colleagues. The way you decompose your system determines its quality attributes — the so-called "-ilities."</p>
+
+    <div class="info-box key-point-box">
+      <p><strong>Quality Attributes (-ilities):</strong> Architecture determines maintainability, testability, deployability, scalability, and reliability. These properties matter far more than functional requirements when choosing an architecture.</p>
+    </div>
+
+    <h4 class="subsubsection-title">The 4+1 View Model</h4>
+
+    <p>An application's architecture can be described from multiple views. The 4+1 view model defines four views, each showing a different aspect:</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>View</th>
+          <th>Focus</th>
+          <th>Example in Microservices</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Logical</strong></td>
+          <td>How developers organize the code</td>
+          <td>Hexagonal Architecture (Ports &amp; Adapters)</td>
+        </tr>
+        <tr>
+          <td><strong>Implementation</strong></td>
+          <td>Build output — deployable units</td>
+          <td>Monolithic Architecture or Microservice Architecture</td>
+        </tr>
+        <tr>
+          <td><strong>Process</strong></td>
+          <td>Running components and their communication</td>
+          <td>Interprocess Communication (IPC)</td>
+        </tr>
+        <tr>
+          <td><strong>Deployment</strong></td>
+          <td>How processes map to machines</td>
+          <td>Infrastructure (containers, VMs, cloud)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The "+1" is the set of scenarios (use cases) that drive the architecture. Each view answers a different question, and together they give a complete picture.</p>
+
+    <h4 class="subsubsection-title">Architectural Style</h4>
+
+    <p>An architectural style, as defined by Garlan and Shaw, is a vocabulary of components and connectors plus a set of constraints on how they can be combined. Think of it as a template for organizing a system. The same application can use different styles for different views.</p>
+
+    <div class="info-box analogy-box">
+      <p><strong>Analogy:</strong> An architectural style is like a building blueprint template. A "colonial style" house has specific rules about shape, roof, and columns. Similarly, a "hexagonal style" application has specific rules about how business logic connects to the outside world.</p>
+    </div>
+  </div>
+
+  <!-- 2.1.2 -->
+  <div class="content-section" id="s2-1-2">
+    <h3 class="subsection-title">Overview of architectural styles</h3>
+
+    <h4 class="subsubsection-title">Layered Architecture (Logical View)</h4>
+
+    <p>The traditional layered (three-tier) architecture organizes code into layers: presentation, business logic, and persistence. Each layer can only depend on the layer directly below it.</p>
+
+    <p>This style has several drawbacks:</p>
+    <ul>
+      <li>Only one presentation layer — hard to support different clients.</li>
+      <li>Only one persistence layer — hard to use multiple databases.</li>
+      <li>Business logic depends on the persistence layer — this inverts the ideal dependency direction.</li>
+    </ul>
+
+    <p>These drawbacks motivate a better alternative: the Hexagonal Architecture.</p>
+
+    <h4 class="subsubsection-title">Hexagonal Architecture (Ports &amp; Adapters)</h4>
+
+    <p>In Hexagonal Architecture, the business logic sits at the center. It does not depend on anything external. Instead, it defines <strong>ports</strong> — interfaces for communicating with the outside world. <strong>Adapters</strong> connect external systems (web, database, messaging) to those ports.</p>
+
+    <ul>
+      <li><strong>Inbound adapters</strong> handle requests from the outside (e.g., a REST controller).</li>
+      <li><strong>Outbound adapters</strong> call external systems (e.g., a database repository).</li>
+    </ul>
+
+    <div class="info-box key-point-box">
+      <p><strong>Key Point:</strong> Adapters depend on the business logic, not the other way around. This keeps business logic independent and easy to test.</p>
+    </div>
+
+    <div class="info-box note-box">
+      <p><strong>Note:</strong> Hexagonal Architecture is the recommended internal architecture for each individual microservice.</p>
+    </div>
+
+    <h4 class="subsubsection-title">Monolithic vs. Microservice Architecture (Implementation View)</h4>
+
+    <p>The implementation view decides how the application is packaged and deployed:</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Style</th>
+          <th>Structure</th>
+          <th>Deployment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Monolithic</strong></td>
+          <td>Single deployable unit</td>
+          <td>One process or artifact</td>
+        </tr>
+        <tr>
+          <td><strong>Microservice</strong></td>
+          <td>Set of independently deployable services</td>
+          <td>Each service runs in its own process</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>These two styles are <strong>alternatives</strong>. You choose one or the other for the implementation view.</p>
+  </div>
+
+  <!-- 2.1.3 -->
+  <div class="content-section" id="s2-1-3">
+    <h3 class="subsection-title">The microservice architecture is an architectural style</h3>
+
+    <p>The microservice architecture is a specific architectural style for the implementation view. It structures the application as a set of <strong>services</strong> (components) that communicate through <strong>protocols</strong> (connectors).</p>
+
+    <p>Each service internally uses Hexagonal Architecture for its logical view. So the implementation view (set of services) and the logical view (hexagonal design inside each service) work together.</p>
+
+    <h4 class="subsubsection-title">What is a service?</h4>
+
+    <p>A service is a standalone, independently deployable software component. It has:</p>
+    <ul>
+      <li>An <strong>API</strong> consisting of commands (actions), queries (reads), and events (notifications).</li>
+      <li>An <strong>encapsulated implementation</strong> — its internal details are hidden from other services.</li>
+    </ul>
+
+    <h4 class="subsubsection-title">Loose Coupling</h4>
+
+    <p>Services interact only through their APIs. They never share databases or internal data structures. This loose coupling means you can change one service without changing others.</p>
+
+    <div class="info-box warning-box">
+      <p><strong>Warning:</strong> If two services share a database, they become tightly coupled. A change to the database schema can break both services. Always avoid shared databases.</p>
+    </div>
+
+    <h4 class="subsubsection-title">Database per Service</h4>
+
+    <p>Each service has its own private database (or schema). This gives two benefits:</p>
+    <ul>
+      <li><strong>Development-time independence:</strong> teams can change their database schema without coordinating with other teams.</li>
+      <li><strong>Runtime isolation:</strong> one service's database load does not slow down another service.</li>
+    </ul>
+
+    <h4 class="subsubsection-title">Shared Libraries</h4>
+
+    <p>It is fine to share libraries for stable, general-purpose utilities (e.g., logging, string manipulation). But business logic should never go into a shared library. If business logic changes, you would need to redeploy every service that uses the library. Put business logic in a service instead.</p>
+
+    <h4 class="subsubsection-title">Service Size</h4>
+
+    <p>The "micro" in microservice is misleading. The size of a service (lines of code, number of endpoints) is an irrelevant metric. What matters is that a small team can own the service independently, with minimal coordination with other teams.</p>
+
+    <div class="info-box analogy-box">
+      <p><strong>Analogy:</strong> Think of a service like a department in a company. A department's "size" does not matter — what matters is that it has clear responsibilities and can do its work without constant meetings with every other department.</p>
+    </div>
+  </div>
+
+  <!-- ===== 2.2 ===== -->
+  <h2 class="section-title" id="s2-2">2.2 Defining an application's microservice architecture</h2>
+
+  <div class="content-section">
+    <p>Defining a microservice architecture is a creative, iterative process — not a mechanical procedure. It follows three main steps:</p>
+    <ol>
+      <li><strong>Step 1:</strong> Start with requirements. Build a high-level domain model (nouns) and identify system operations (verbs) with their pre- and post-conditions.</li>
+      <li><strong>Step 2:</strong> Decompose the application into services using one of two patterns: Decompose by Business Capability or Decompose by Subdomain.</li>
+      <li><strong>Step 3:</strong> Assign operations to services, determine which services must collaborate, and define each service's API.</li>
+    </ol>
+
+    <div class="info-box note-box">
+      <p><strong>Note:</strong> These steps are not strictly sequential. You will go back and forth as you learn more about the domain.</p>
+    </div>
+  </div>
+
+  <!-- 2.2.1 -->
+  <div class="content-section" id="s2-2-1">
+    <h3 class="subsection-title">Identifying the system operations</h3>
+
+    <p>The first step creates two outputs from the application requirements:</p>
+    <ul>
+      <li>A <strong>high-level domain model</strong> — the key nouns (entities) and their relationships. For example: Order, Customer, Restaurant, MenuItem.</li>
+      <li><strong>System operations</strong> — the key verbs (actions and queries) that the application must support. For example: createOrder, acceptOrder, findOrderById.</li>
+    </ul>
+
+    <p>Each system operation has:</p>
+    <ul>
+      <li><strong>Pre-conditions:</strong> what must be true before the operation runs (e.g., the consumer must exist).</li>
+      <li><strong>Post-conditions:</strong> what is true after the operation runs (e.g., an Order entity is created).</li>
+    </ul>
+
+    <p>System operations are categorized as <strong>commands</strong> (create, update, delete data) or <strong>queries</strong> (read data).</p>
+  </div>
+
+  <!-- 2.2.2 -->
+  <div class="content-section" id="s2-2-2">
+    <h3 class="subsection-title">Defining services by applying the Decompose by business capability pattern</h3>
+
+    <p>A <strong>business capability</strong> is something a business does to generate value. It describes <em>what</em> the business does, not <em>how</em> it does it. Business capabilities are identified by analyzing the organization's purpose and structure.</p>
+
+    <div class="pattern-summary">
+      <h4>Pattern: Decompose by Business Capability</h4>
+      <div class="ps-row">
+        <span class="ps-label">Problem:</span>
+        <span>How do you decide which services to create?</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Solution:</span>
+        <span>Define services that correspond to business capabilities.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Benefit:</span>
+        <span>Business capabilities are stable (the "what" changes rarely), so the resulting architecture is stable too.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Example:</span>
+        <span>A food-delivery application has capabilities like Order Management, Kitchen Management, Delivery, and Accounting — each becomes a service.</span>
+      </div>
+    </div>
+
+    <div class="info-box key-point-box">
+      <p><strong>Key Point:</strong> Services should be organized around business concerns, not technical concerns. Do not create a "database service" or a "logging service." Instead, create services like "Order Service" or "Restaurant Service."</p>
+    </div>
+  </div>
+
+  <!-- 2.2.3 -->
+  <div class="content-section" id="s2-2-3">
+    <h3 class="subsection-title">Defining services by applying the Decompose by sub-domain pattern</h3>
+
+    <p>Domain-Driven Design (DDD) offers an alternative decomposition strategy. DDD says that every complex business has multiple <strong>subdomains</strong>, and each subdomain has its own <strong>domain model</strong>.</p>
+
+    <div class="pattern-summary">
+      <h4>Pattern: Decompose by Subdomain (DDD)</h4>
+      <div class="ps-row">
+        <span class="ps-label">Problem:</span>
+        <span>How do you decide which services to create?</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Solution:</span>
+        <span>Define services that correspond to DDD subdomains.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Benefit:</span>
+        <span>Each service owns its own domain model. This eliminates God Classes and avoids a single, overly complex enterprise model.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Key Concept:</span>
+        <span>Each subdomain has a Bounded Context — the scope within which a domain model is valid. A Bounded Context maps directly to a service boundary.</span>
+      </div>
+    </div>
+
+    <p>Both decomposition patterns — by Business Capability and by Subdomain — produce services organized around business concerns. In practice, they often give very similar results.</p>
+
+    <h4 class="subsubsection-title">DDD as the Decomposition Enabler</h4>
+
+    <p>Without DDD, organizations often try to build a single enterprise-wide data model. This approach fails because:</p>
+    <ul>
+      <li>Different teams cannot agree on a single model.</li>
+      <li>A single model becomes overly complex.</li>
+      <li>The same term means different things in different parts of the business.</li>
+    </ul>
+
+    <p>DDD solves this by using <strong>multiple domain models</strong>, each within its own Bounded Context. The same real-world entity has different representations in different services:</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Entity Name</th>
+          <th>Focus</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Order Service</td>
+          <td>Order</td>
+          <td>Consumer details, payment, line items</td>
+        </tr>
+        <tr>
+          <td>Kitchen Service</td>
+          <td>Ticket</td>
+          <td>Items to prepare, preparation status</td>
+        </tr>
+        <tr>
+          <td>Delivery Service</td>
+          <td>Delivery</td>
+          <td>Pickup and drop-off addresses, courier</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Consistency across these different representations is maintained through Sagas and domain events. The API Gateway translates between domain models when a user interface needs data from multiple services.</p>
+
+    <div class="info-box note-box">
+      <p><strong>Note:</strong> Event Storming is an alternative, collaborative technique for discovering domain models and service boundaries. Teams place domain events on a timeline and group them into aggregates and bounded contexts.</p>
+    </div>
+  </div>
+
+  <!-- 2.2.4 -->
+  <div class="content-section" id="s2-2-4">
+    <h3 class="subsection-title">Decomposition guidelines</h3>
+
+    <p>Two object-oriented design principles guide good decomposition:</p>
+
+    <div class="pattern-summary">
+      <h4>Single Responsibility Principle (SRP)</h4>
+      <div class="ps-row">
+        <span class="ps-label">Principle:</span>
+        <span>A class (or service) should have only one reason to change.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Applied to microservices:</span>
+        <span>Each service should be cohesive — it should implement a small, focused set of related functions.</span>
+      </div>
+    </div>
+
+    <div class="pattern-summary">
+      <h4>Common Closure Principle (CCP)</h4>
+      <div class="ps-row">
+        <span class="ps-label">Principle:</span>
+        <span>Classes that change together should be packaged together.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Applied to microservices:</span>
+        <span>Code that changes for the same business reason should be in the same service. This prevents a distributed monolith where a single business change requires updating many services at once.</span>
+      </div>
+    </div>
+
+    <div class="info-box warning-box">
+      <p><strong>Warning:</strong> If every business change requires coordinated deployment of multiple services, you have a distributed monolith — not a microservice architecture. Apply SRP and CCP to avoid this.</p>
+    </div>
+  </div>
+
+  <!-- 2.2.5 -->
+  <div class="content-section" id="s2-2-5">
+    <h3 class="subsection-title">Obstacles to decomposing an application into services</h3>
+
+    <p>Decomposition is not always straightforward. Several obstacles can make it harder or force compromises.</p>
+
+    <h4 class="subsubsection-title">1. Network Latency</h4>
+
+    <p>When services communicate over the network, each call adds latency. If a particular decomposition leads to too many round-trips between services, the system becomes slow. Solutions include:</p>
+    <ul>
+      <li>Using batch APIs to reduce the number of calls.</li>
+      <li>Combining services that communicate too frequently.</li>
+    </ul>
+
+    <h4 class="subsubsection-title">2. Synchronous IPC Reduces Availability</h4>
+
+    <p>If Service A calls Service B synchronously, and Service B is down, then Service A is also effectively down. This reduces overall availability. Solutions include:</p>
+    <ul>
+      <li>Using asynchronous messaging instead of synchronous calls.</li>
+      <li>Building self-contained services that keep local replicas of needed data (using CQRS).</li>
+    </ul>
+
+    <h4 class="subsubsection-title">3. Data Consistency across Services</h4>
+
+    <p>In a monolith, you can use a single database transaction to keep data consistent. With microservices, each service has its own database. You cannot use traditional two-phase commit (2PC) across services.</p>
+
+    <p>The solution is the <strong>Saga pattern</strong>: a sequence of local transactions coordinated by messages. Sagas provide <strong>eventual consistency</strong> instead of immediate consistency. Data that must be atomically consistent must live in the same service.</p>
+
+    <h4 class="subsubsection-title">4. Consistent View of Data</h4>
+
+    <p>Because each service has its own database, you cannot get a globally consistent snapshot of all data at one point in time. In practice, this is rarely a real problem.</p>
+
+    <h4 class="subsubsection-title">5. God Classes</h4>
+
+    <p>A God Class is a large class used throughout the application — like an "Order" class that every part of the system depends on. If you keep a single Order class, it couples all services together.</p>
+
+    <p>DDD solves this: each service has its own version of the entity, with only the attributes it needs. The Order Service has an Order, the Kitchen Service has a Ticket, and the Delivery Service has a Delivery.</p>
+
+    <div class="info-box key-point-box">
+      <p><strong>Key Point:</strong> God Classes are solved by DDD's concept of multiple domain models. Each Bounded Context defines its own representation of shared business concepts.</p>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Obstacle</th>
+          <th>Problem</th>
+          <th>Solution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Network Latency</td>
+          <td>Too many remote calls</td>
+          <td>Batch APIs or merge services</td>
+        </tr>
+        <tr>
+          <td>Synchronous IPC</td>
+          <td>Cascading failures</td>
+          <td>Async messaging or CQRS replicas</td>
+        </tr>
+        <tr>
+          <td>Data Consistency</td>
+          <td>No distributed transactions</td>
+          <td>Sagas (eventual consistency)</td>
+        </tr>
+        <tr>
+          <td>Consistent View</td>
+          <td>No global snapshot</td>
+          <td>Accept eventual consistency; rarely a problem</td>
+        </tr>
+        <tr>
+          <td>God Classes</td>
+          <td>Tight coupling via shared entities</td>
+          <td>DDD: each service has its own entity version</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2.2.6 -->
+  <div class="content-section" id="s2-2-6">
+    <h3 class="subsection-title">Defining service APIs</h3>
+
+    <p>After decomposing into services, you need to define each service's API. This is done by assigning system operations to services.</p>
+
+    <h4 class="subsubsection-title">Assigning Operations</h4>
+
+    <p>Each system operation is assigned to the service that owns the data (information) the operation needs. This service becomes the <strong>entry point</strong> for that operation.</p>
+
+    <h4 class="subsubsection-title">Cross-Service Collaboration</h4>
+
+    <p>Some operations need data or actions from multiple services. For example, <code>createOrder</code> starts in the Order Service but must also verify the consumer (Consumer Service), check the restaurant menu (Restaurant Service), create a kitchen ticket (Kitchen Service), and authorize payment (Accounting Service).</p>
+
+    <p>This collaboration means that each participating service needs additional API operations that support the cross-service workflow.</p>
+
+    <div class="info-box note-box">
+      <p><strong>Note:</strong> The choice of IPC mechanism (REST, gRPC, messaging) is covered in Chapter 3. The coordination pattern for multi-service operations (Sagas) is covered in Chapter 4.</p>
+    </div>
+
+    <div class="pattern-summary">
+      <h4>Service API Definition Summary</h4>
+      <div class="ps-row">
+        <span class="ps-label">Step 1:</span>
+        <span>List all system operations (commands and queries).</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Step 2:</span>
+        <span>Assign each operation to the service that owns the related data.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Step 3:</span>
+        <span>Identify cross-service collaborations and add supporting operations to collaborating services.</span>
+      </div>
+      <div class="ps-row">
+        <span class="ps-label">Result:</span>
+        <span>Each service has a well-defined API of commands, queries, and events.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KEY TAKEAWAYS ===== -->
+  <div class="takeaways" id="takeaways">
+    <h3>Key Takeaways</h3>
+    <ul>
+      <li>Software architecture is the decomposition into elements and relationships. It determines your system's quality attributes (maintainability, testability, deployability, scalability).</li>
+      <li>Use the 4+1 view model to describe architecture from multiple perspectives: logical, implementation, process, and deployment.</li>
+      <li>Hexagonal Architecture (Ports &amp; Adapters) is the recommended logical-view style for each microservice. Business logic sits at the center; adapters depend on it, not the other way around.</li>
+      <li>The microservice architecture is an implementation-view style: a set of independently deployable services communicating through protocols.</li>
+      <li>Each service should have its own private database (Database per Service) to ensure loose coupling and independent development.</li>
+      <li>Defining a microservice architecture is a three-step, iterative process: identify system operations, decompose into services, and define service APIs.</li>
+      <li>Two decomposition patterns exist: Decompose by Business Capability and Decompose by Subdomain (DDD). Both organize services around business concerns.</li>
+      <li>DDD's Bounded Contexts solve the God Class problem by letting each service own its own domain model with its own representation of shared entities.</li>
+      <li>SRP and CCP guide good decomposition: cohesive services with minimal cross-service coordination for business changes.</li>
+      <li>Key obstacles include network latency, reduced availability from synchronous IPC, data consistency (solved by Sagas), and God Classes (solved by DDD).</li>
+      <li>Service APIs are defined by assigning system operations to services based on data ownership, then identifying cross-service collaborations.</li>
+    </ul>
+  </div>
+
+  <!-- ===== CHAPTER NAV ===== -->
+  <div class="chapter-nav">
+    <a href="ch1.html" class="prev">Chapter 1</a>
+    <a href="ch3.html" class="next">Chapter 3</a>
+  </div>
+
+</div>
+
+<a href="#top" class="back-to-top">&uarr;</a>
+
+<footer class="site-footer">
+  Study material based on validated concept extractions from "Microservices Patterns" by Chris Richardson.
+</footer>
+
+</body>
+</html>

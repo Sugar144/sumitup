@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 7 — Implementing Queries | Microservices Patterns Study Guide</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body id="top">
+
+<header class="chapter-header">
+  <div class="breadcrumb"><a href="index.html">Home</a> &rsaquo; Chapter 7</div>
+  <h1>Chapter 7: Implementing Queries in a Microservice Architecture</h1>
+  <p class="chapter-desc">How to query data that is spread across services — from the simple API Composition pattern to the powerful CQRS pattern, view design, and a DynamoDB implementation example.</p>
+  <div class="stats-bar">
+    <span class="stat-badge">2 Patterns</span>
+    <span class="stat-badge">4 Definitions</span>
+    <span class="stat-badge">6 Principles</span>
+    <span class="stat-badge">7 Problems</span>
+    <span class="stat-badge">3 Tradeoffs</span>
+    <span class="stat-badge">2 Technologies</span>
+    <span class="stat-badge">24 Total Concepts</span>
+  </div>
+</header>
+
+<nav class="nav-bar">
+  <a href="index.html">Home</a>
+  <a href="ch1.html">Ch 1</a>
+  <a href="ch2.html">Ch 2</a>
+  <a href="ch3.html">Ch 3</a>
+  <a href="ch4.html">Ch 4</a>
+  <a href="ch5.html">Ch 5</a>
+  <a href="ch7.html" class="active">Ch 7</a>
+</nav>
+
+<div class="page-container">
+
+  <!-- Table of Contents -->
+  <nav class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li class="toc-section">
+        <a href="#s7-1">7.1 Querying using the API composition pattern</a>
+        <ol>
+          <li><a href="#s7-1-1">The findOrder() query operation</a></li>
+          <li><a href="#s7-1-2">Overview of the API composition pattern</a></li>
+          <li><a href="#s7-1-3">Implementing findOrder() using API composition</a></li>
+          <li><a href="#s7-1-4">API composition design issues</a></li>
+          <li><a href="#s7-1-5">Benefits and drawbacks of API composition</a></li>
+        </ol>
+      </li>
+      <li class="toc-section">
+        <a href="#s7-2">7.2 Using the CQRS pattern</a>
+        <ol>
+          <li><a href="#s7-2-1">Motivations for using CQRS</a></li>
+          <li><a href="#s7-2-2">Overview of CQRS</a></li>
+          <li><a href="#s7-2-3">The benefits of CQRS</a></li>
+          <li><a href="#s7-2-4">The drawbacks of CQRS</a></li>
+        </ol>
+      </li>
+      <li class="toc-section">
+        <a href="#s7-3">7.3 Designing CQRS views</a>
+        <ol>
+          <li><a href="#s7-3-1">Choosing a view datastore</a></li>
+          <li><a href="#s7-3-2">Data access module design</a></li>
+          <li><a href="#s7-3-3">Adding and updating CQRS views</a></li>
+        </ol>
+      </li>
+      <li class="toc-section">
+        <a href="#s7-4">7.4 Implementing a CQRS view with AWS DynamoDB</a>
+        <ol>
+          <li><a href="#s7-4-1">The OrderHistoryEventHandlers module</a></li>
+          <li><a href="#s7-4-2">Data modeling and query design with DynamoDB</a></li>
+          <li><a href="#s7-4-3">The OrderHistoryDaoDynamoDb class</a></li>
+        </ol>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- ================================================================== -->
+  <!-- The Core Problem -->
+  <!-- ================================================================== -->
+  <h2 class="section-title" id="s7-1">7.1 Querying using the API composition pattern</h2>
+
+  <div class="content-section">
+    <p>In a microservice architecture, each service owns its private database. You cannot write a single SQL query that joins data from multiple services. This is the core querying problem.</p>
+
+    <p>Two patterns solve this problem:</p>
+    <ul>
+      <li><strong>API Composition</strong> — the simple, default choice. A composer queries multiple services and combines the results.</li>
+      <li><strong>CQRS</strong> — the powerful but complex alternative. A separate view database is kept in sync using events.</li>
+    </ul>
+
+    <div class="info-box key-point-box">
+      <p><strong>Guiding principle:</strong> Use API Composition whenever possible. Only use CQRS when API Composition cannot efficiently support the query you need.</p>
+    </div>
+  </div>
+
+  <!-- 7.1.1 The findOrder() query operation -->
+  <h3 class="subsection-title" id="s7-1-1">The findOrder() query operation</h3>
+  <div class="content-section">
+    <p>Consider a <code>findOrder()</code> query that returns details about an order. In the FTGO application, order data is spread across multiple services: Order Service holds the order details, Kitchen Service holds the ticket status, Delivery Service holds the delivery info, and Accounting Service holds the billing status.</p>
+
+    <p>No single service has all the data needed to answer this query. You must gather data from several services and combine it.</p>
+
+    <div class="info-box analogy-box">
+      <p><strong>Analogy:</strong> Imagine you need a full report on a student. Grades are in one office, attendance is in another, and health records are in a third. You must visit each office, collect the information, and combine it yourself.</p>
+    </div>
+  </div>
+
+  <!-- 7.1.2 Overview of the API composition pattern -->
+  <h3 class="subsection-title" id="s7-1-2">Overview of the API composition pattern</h3>
+  <div class="content-section">
+    <div class="pattern-summary">
+      <h4>Pattern: API Composition</h4>
+      <div class="ps-row"><span class="ps-label">Problem</span> <span>How to query data spread across multiple services?</span></div>
+      <div class="ps-row"><span class="ps-label">Solution</span> <span>An API Composer queries multiple Provider Services and combines the results in memory.</span></div>
+      <div class="ps-row"><span class="ps-label">Participants</span> <span>API Composer (the coordinator) + Provider Services (the data sources).</span></div>
+    </div>
+
+    <p>The API Composer sends requests to each Provider Service, waits for the responses, and then merges the data into a single result. The Provider Services are the services that own the data needed for the query.</p>
+  </div>
+
+  <!-- 7.1.3 Implementing findOrder() using API composition -->
+  <h3 class="subsection-title" id="s7-1-3">Implementing findOrder() using API composition</h3>
+  <div class="content-section">
+    <p>To implement <code>findOrder()</code>, the API Composer calls four provider services — Order Service, Kitchen Service, Delivery Service, and Accounting Service — and combines their responses into one unified order view.</p>
+
+    <h4 class="subsubsection-title">Where to place the API Composer</h4>
+    <p>There are three options for where the API Composer lives:</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Description</th>
+          <th>When to use</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Client</strong></td>
+          <td>The frontend application queries each service directly and merges the results.</td>
+          <td>Simple cases where the client has direct access to services.</td>
+        </tr>
+        <tr>
+          <td><strong>API Gateway</strong></td>
+          <td>The API Gateway acts as the composer. It queries provider services and returns one combined response.</td>
+          <td>When the query is exposed as an external API endpoint.</td>
+        </tr>
+        <tr>
+          <td><strong>Standalone Service</strong></td>
+          <td>A dedicated service handles the composition logic.</td>
+          <td>When the composition logic is complex or used by multiple clients internally.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4 class="subsubsection-title">Reactive programming model</h4>
+    <p>To reduce latency, the API Composer should call provider services <strong>in parallel</strong> whenever possible. Use a reactive programming model: send all independent requests at once and wait for all of them to complete. Only call services sequentially when one call depends on the result of another.</p>
+  </div>
+
+  <!-- 7.1.4 API composition design issues -->
+  <h3 class="subsection-title" id="s7-1-4">API composition design issues</h3>
+  <div class="content-section">
+    <h4 class="subsubsection-title">Increased overhead</h4>
+    <p>API Composition adds network overhead. Instead of one database query, you make multiple service calls. Each call adds latency. For simple queries, this overhead is acceptable. For complex queries with many providers, it can become a problem.</p>
+
+    <h4 class="subsubsection-title">Reduced availability</h4>
+    <p>The more provider services involved, the lower the overall availability. If any provider is down, the query may fail. Two strategies can help:</p>
+    <ul>
+      <li><strong>Cache previous results</strong> — if a provider is unavailable, return cached data from a previous successful call.</li>
+      <li><strong>Return incomplete data</strong> — return whatever data is available and let the client know some parts are missing.</li>
+    </ul>
+
+    <h4 class="subsubsection-title">No transactional consistency</h4>
+    <p>The API Composer calls multiple services at different points in time. There is no transaction that spans these calls. This means the data from different services may be slightly inconsistent — one service might have processed an update that another has not yet seen.</p>
+
+    <div class="info-box warning-box">
+      <p><strong>Limitation:</strong> API Composition does not guarantee transactional consistency across provider services. The combined result may show data from different points in time.</p>
+    </div>
+  </div>
+
+  <!-- 7.1.5 Benefits and drawbacks of API composition -->
+  <h3 class="subsection-title" id="s7-1-5">Benefits and drawbacks of API composition</h3>
+  <div class="content-section">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Benefits</th>
+          <th>Drawbacks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Simple to understand and implement</td>
+          <td>Increased network overhead (multiple calls)</td>
+        </tr>
+        <tr>
+          <td>No extra infrastructure needed</td>
+          <td>Reduced availability when many providers are involved</td>
+        </tr>
+        <tr>
+          <td>Works well for straightforward queries</td>
+          <td>No transactional consistency across providers</td>
+        </tr>
+        <tr>
+          <td>Default choice — use it first</td>
+          <td>Inefficient for queries requiring in-memory joins of large datasets</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- 7.2 Using the CQRS pattern -->
+  <!-- ================================================================== -->
+  <h2 class="section-title" id="s7-2">7.2 Using the CQRS pattern</h2>
+
+  <div class="content-section">
+    <p>Some queries are too complex or too inefficient for API Composition. In these cases, the CQRS pattern is the answer. CQRS stands for <strong>Command Query Responsibility Segregation</strong> — it separates the write side from the read side of your data.</p>
+  </div>
+
+  <!-- 7.2.1 Motivations for using CQRS -->
+  <h3 class="subsection-title" id="s7-2-1">Motivations for using CQRS</h3>
+  <div class="content-section">
+    <p>Three specific problems motivate the use of CQRS:</p>
+
+    <h4 class="subsubsection-title">Problem 1: Inefficient in-memory joins</h4>
+    <p>Consider a <code>findOrderHistory()</code> query that searches a customer's past orders by keyword. API Composition would need to fetch all orders from the Order Service, all tickets from the Kitchen Service, and then join and filter them in memory. For large datasets, this is very slow and wasteful.</p>
+
+    <h4 class="subsubsection-title">Problem 2: Wrong database type for the query</h4>
+    <p>Sometimes a service stores its data in a database that does not support the type of query you need. For example, you need geospatial search (find nearby restaurants) but the service uses a database without geospatial features. API Composition cannot fix this — the provider simply cannot answer the query efficiently.</p>
+
+    <h4 class="subsubsection-title">Problem 3: Separation of concerns</h4>
+    <p>The service that owns the data is not always the best service to implement a complex, high-volume query. A read-heavy dashboard or search feature may need a dedicated service with its own optimized view of the data. Putting this logic inside the data-owning service would add unnecessary complexity to that service.</p>
+
+    <div class="info-box note-box">
+      <p><strong>Rule of thumb:</strong> If API Composition requires fetching large datasets and joining them in memory, if the provider's database does not support the query type, or if the query logic does not belong in the data-owning service — consider CQRS.</p>
+    </div>
+  </div>
+
+  <!-- 7.2.2 Overview of CQRS -->
+  <h3 class="subsection-title" id="s7-2-2">Overview of CQRS</h3>
+  <div class="content-section">
+    <div class="pattern-summary">
+      <h4>Pattern: CQRS (Command Query Responsibility Segregation)</h4>
+      <div class="ps-row"><span class="ps-label">Problem</span> <span>How to efficiently query data spread across services, especially when API Composition is inadequate?</span></div>
+      <div class="ps-row"><span class="ps-label">Solution</span> <span>Split into a Command Side (creates, updates, deletes + publishes events) and a Query Side (maintains read-optimized views updated by consuming those events).</span></div>
+      <div class="ps-row"><span class="ps-label">Key idea</span> <span>The query side subscribes to events from one or more services and builds a view that is optimized for the specific query.</span></div>
+    </div>
+
+    <h4 class="subsubsection-title">Command side and query side</h4>
+    <p>The <strong>command side</strong> handles all create, update, and delete operations. It contains the domain model and business logic. After each change, it publishes a domain event.</p>
+    <p>The <strong>query side</strong> subscribes to these events and updates its read-optimized view. When a query arrives, it reads directly from this view — no joins, no calling other services.</p>
+
+    <h4 class="subsubsection-title">Query-only services</h4>
+    <p>You can create standalone query services that subscribe to events from multiple services. For example:</p>
+    <ul>
+      <li><strong>Order History Service</strong> — subscribes to events from Order Service, Kitchen Service, and Delivery Service to build a searchable order history.</li>
+      <li><strong>Available Restaurants Service</strong> — subscribes to Restaurant Service events and stores data in a geospatial database for location-based searches.</li>
+    </ul>
+
+    <h4 class="subsubsection-title">Generalization of a familiar pattern</h4>
+    <p>CQRS is a broader version of a pattern many developers already know: using an RDBMS as the primary database and syncing data to a text search engine (like Elasticsearch). CQRS generalizes this by allowing any combination of databases and using domain events for near-real-time sync instead of ETL jobs.</p>
+
+    <h4 class="subsubsection-title">CQRS and event sourcing</h4>
+    <p>Event sourcing stores data as a sequence of events. Event stores typically only support queries by primary key (aggregate ID). CQRS solves this limitation by building read-optimized views from the event stream. This makes CQRS almost essential for applications that use event sourcing.</p>
+
+    <div class="info-box analogy-box">
+      <p><strong>Analogy:</strong> Think of a library system. The cataloging department (command side) records every new book that arrives. The search terminals (query side) have their own index, organized for fast searching by title, author, or subject. The search index is updated every time a new book is cataloged.</p>
+    </div>
+  </div>
+
+  <!-- 7.2.3 Benefits of CQRS -->
+  <h3 class="subsection-title" id="s7-2-3">The benefits of CQRS</h3>
+  <div class="content-section">
+    <ul>
+      <li><strong>Efficient multi-service queries</strong> — the view already contains all the data needed for the query. No need to call multiple services or join data in memory.</li>
+      <li><strong>Diverse query types</strong> — you can choose any database technology for the view: document store for flexible queries, text search engine for keyword search, graph database for relationship queries, or RDBMS for structured data.</li>
+      <li><strong>Separation of concerns</strong> — the query logic lives in its own service, keeping the data-owning services simpler.</li>
+      <li><strong>Enables querying in event-sourced applications</strong> — because event stores only support primary key lookups, CQRS views provide the rich querying that event-sourced apps need.</li>
+    </ul>
+  </div>
+
+  <!-- 7.2.4 Drawbacks of CQRS -->
+  <h3 class="subsection-title" id="s7-2-4">The drawbacks of CQRS</h3>
+  <div class="content-section">
+    <ul>
+      <li><strong>Architectural complexity</strong> — you need additional services, event handlers, a view database, and an event infrastructure. This is more code to write, test, and operate.</li>
+      <li><strong>Replication lag (eventual consistency)</strong> — the view is updated asynchronously. There is a delay between when the command side publishes an event and when the query side processes it. During this window, the view shows stale data.</li>
+    </ul>
+
+    <div class="info-box warning-box">
+      <p><strong>Tradeoff:</strong> CQRS gives you powerful and efficient queries, but at the cost of additional complexity and eventual consistency. The view may be slightly behind the command side.</p>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>API Composition</th>
+          <th>CQRS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Complexity</td>
+          <td>Simple</td>
+          <td>Higher (extra services, events, views)</td>
+        </tr>
+        <tr>
+          <td>Consistency</td>
+          <td>Near real-time (but no transactions)</td>
+          <td>Eventually consistent (replication lag)</td>
+        </tr>
+        <tr>
+          <td>Query efficiency</td>
+          <td>Multiple calls + in-memory joins</td>
+          <td>Single read from optimized view</td>
+        </tr>
+        <tr>
+          <td>Database flexibility</td>
+          <td>Limited to each provider's database</td>
+          <td>Any database type for the view</td>
+        </tr>
+        <tr>
+          <td>When to use</td>
+          <td>Default choice for simple queries</td>
+          <td>Complex queries, large datasets, special DB needs</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- 7.3 Designing CQRS views -->
+  <!-- ================================================================== -->
+  <h2 class="section-title" id="s7-3">7.3 Designing CQRS views</h2>
+
+  <div class="content-section">
+    <p>A CQRS view module has four components:</p>
+    <ul>
+      <li><strong>Event Handlers</strong> — subscribe to domain events and translate them into database updates.</li>
+      <li><strong>Query API</strong> — exposes the query operations for clients.</li>
+      <li><strong>Data Access Module (DAO)</strong> — handles all reads and writes to the view database.</li>
+      <li><strong>View Database</strong> — stores the read-optimized data.</li>
+    </ul>
+  </div>
+
+  <!-- 7.3.1 Choosing a view datastore -->
+  <h3 class="subsection-title" id="s7-3-1">Choosing a view datastore</h3>
+  <div class="content-section">
+    <p>The choice of view database depends on the type of query the view needs to support. Match the database to the query:</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Query type</th>
+          <th>Good datastore choice</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Flexible queries on JSON-like documents</td>
+          <td>Document store (e.g., MongoDB)</td>
+        </tr>
+        <tr>
+          <td>Text search with keywords</td>
+          <td>Text search engine (e.g., Elasticsearch)</td>
+        </tr>
+        <tr>
+          <td>Graph or relationship queries</td>
+          <td>Graph database (e.g., Neo4j)</td>
+        </tr>
+        <tr>
+          <td>Structured queries with joins</td>
+          <td>RDBMS (e.g., PostgreSQL, MySQL)</td>
+        </tr>
+        <tr>
+          <td>High-throughput key-value lookups</td>
+          <td>Key-value / wide-column store (e.g., DynamoDB)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box key-point-box">
+      <p><strong>Principle:</strong> Let the query requirements drive the database choice. A CQRS view can use a completely different database technology than the command side.</p>
+    </div>
+  </div>
+
+  <!-- 7.3.2 Data access module design -->
+  <h3 class="subsection-title" id="s7-3-2">Data access module design</h3>
+  <div class="content-section">
+    <p>The Data Access Module (DAO) is responsible for all interaction with the view database. It must handle three concerns carefully:</p>
+
+    <h4 class="subsubsection-title">Concurrent updates</h4>
+    <p>Multiple events for the same or related entities can arrive close together. The DAO must handle concurrent updates safely. Two approaches:</p>
+    <ul>
+      <li><strong>Locking</strong> — use pessimistic or optimistic locking to prevent conflicts.</li>
+      <li><strong>Atomic field-level updates</strong> — update only the specific fields that changed, rather than replacing the entire record. This avoids overwriting concurrent changes to other fields.</li>
+    </ul>
+
+    <h4 class="subsubsection-title">Idempotent event handling</h4>
+    <p>Events may be delivered more than once (at-least-once delivery). The DAO must handle duplicates without applying the same change twice. A common approach is to track the maximum <code>eventId</code> processed for each aggregate source. If an incoming event has an ID that is less than or equal to the stored maximum, the DAO skips it.</p>
+
+    <h4 class="subsubsection-title">Handling replication lag</h4>
+    <p>Because the view is eventually consistent, a client might write data on the command side and then immediately query the view before the view has been updated. Two strategies help:</p>
+    <ul>
+      <li><strong>Event ID tokens</strong> — the command side returns an event ID with each write response. The client passes this token with its next query. The query side checks if its view has processed that event yet. If not, it can wait or tell the client the data is not ready.</li>
+      <li><strong>Client-side optimistic updates</strong> — the client UI updates itself immediately after the write, without waiting for the view to catch up. This gives a responsive user experience even when the view lags behind.</li>
+    </ul>
+
+    <div class="info-box note-box">
+      <p><strong>Design tip:</strong> Prefer atomic field-level updates over full-record replacement. They reduce the risk of concurrent update conflicts and work well with NoSQL databases like DynamoDB.</p>
+    </div>
+  </div>
+
+  <!-- 7.3.3 Adding and updating CQRS views -->
+  <h3 class="subsection-title" id="s7-3-3">Adding and updating CQRS views</h3>
+  <div class="content-section">
+    <h4 class="subsubsection-title">Building a new view</h4>
+    <p>When you create a new CQRS view, you need to populate it with historical data. The view must process all past events to reach the current state. But message brokers do not store events indefinitely.</p>
+
+    <p>The solution is to use <strong>archived events</strong>. Store domain events in a durable archive (for example, Amazon S3). When building a new view, replay the archived events. A tool like Apache Spark can process large archives efficiently.</p>
+
+    <h4 class="subsubsection-title">Rebuilding an existing view</h4>
+    <p>Sometimes you need to rebuild a view — for example, after fixing a bug in the event handler or changing the view schema. Reprocessing all events from the beginning can be very slow as the event history grows.</p>
+
+    <p>The solution is <strong>incremental snapshots</strong>. Periodically save a snapshot of the view's current state. To rebuild, load the latest snapshot and then replay only the events that came after it. This is much faster than replaying the full event history.</p>
+
+    <div class="info-box key-point-box">
+      <p><strong>Principle:</strong> Archive domain events in durable storage (e.g., S3) for building new views. Use incremental snapshots for efficient view rebuilds.</p>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- 7.4 Implementing a CQRS view with AWS DynamoDB -->
+  <!-- ================================================================== -->
+  <h2 class="section-title" id="s7-4">7.4 Implementing a CQRS view with AWS DynamoDB</h2>
+
+  <div class="content-section">
+    <p>This section walks through a concrete implementation of a CQRS view: the <strong>Order History Service</strong>. This service provides a queryable view of a customer's past orders, built with AWS DynamoDB as the view datastore.</p>
+  </div>
+
+  <!-- 7.4.1 The OrderHistoryEventHandlers module -->
+  <h3 class="subsection-title" id="s7-4-1">The OrderHistoryEventHandlers module</h3>
+  <div class="content-section">
+    <p>The <code>OrderHistoryEventHandlers</code> module subscribes to domain events from multiple services (Order Service, Kitchen Service, Delivery Service, etc.). When an event arrives, the handler calls the DAO to update the DynamoDB view.</p>
+
+    <p>Each event handler translates a domain event into a specific update operation on the Order History table. For example, an <code>OrderCreated</code> event inserts a new item, while a <code>DeliveryPickedUp</code> event updates the delivery status field.</p>
+  </div>
+
+  <!-- 7.4.2 Data modeling and query design with DynamoDB -->
+  <h3 class="subsection-title" id="s7-4-2">Data modeling and query design with DynamoDB</h3>
+  <div class="content-section">
+    <h4 class="subsubsection-title">Table structure</h4>
+    <p>The Order History table uses <code>orderId</code> as the partition key (primary key). Each item stores the order details as hierarchical attributes — nested structures that hold information from multiple source services.</p>
+
+    <h4 class="subsubsection-title">Global Secondary Index (GSI)</h4>
+    <p>To support queries like "find all orders for a given customer, sorted by date," the table uses a <strong>Global Secondary Index (GSI)</strong> with <code>consumerId</code> as the partition key and <code>orderCreationDate</code> as the sort key. DynamoDB requires a GSI because you can only query by the table's primary key without one.</p>
+
+    <h4 class="subsubsection-title">Keyword search</h4>
+    <p>DynamoDB does not have built-in full-text search. To support keyword filtering, the implementation tokenizes relevant text (such as restaurant name and menu item names) into a <strong>keywords set attribute</strong>. The query uses a <code>contains()</code> filter expression to check if the keywords set includes the search term.</p>
+
+    <div class="info-box note-box">
+      <p><strong>Limitation:</strong> The <code>contains()</code> filter approach is less powerful than a true text search engine. It works for simple keyword matching but does not support ranking, stemming, or fuzzy matching. For advanced search, consider Elasticsearch as the view datastore instead.</p>
+    </div>
+
+    <h4 class="subsubsection-title">Pagination</h4>
+    <p>DynamoDB uses opaque <strong>LastEvaluatedKey</strong> tokens for pagination. The client receives a token with each page of results and passes it back to fetch the next page. This is efficient but means you cannot jump to a specific page number — only forward through the result set.</p>
+  </div>
+
+  <!-- 7.4.3 The OrderHistoryDaoDynamoDb class -->
+  <h3 class="subsection-title" id="s7-4-3">The OrderHistoryDaoDynamoDb class</h3>
+  <div class="content-section">
+    <p>The <code>OrderHistoryDaoDynamoDb</code> class is the DAO that handles all DynamoDB interactions. It implements both the update operations (called by event handlers) and the query operations (called by the query API).</p>
+
+    <h4 class="subsubsection-title">UpdateItem over PutItem</h4>
+    <p>For updates, the DAO uses DynamoDB's <code>UpdateItem</code> operation instead of <code>PutItem</code>. <code>UpdateItem</code> modifies specific fields atomically, while <code>PutItem</code> replaces the entire item. Using <code>UpdateItem</code> is safer for concurrent updates because two handlers updating different fields of the same order will not overwrite each other's changes.</p>
+
+    <h4 class="subsubsection-title">Duplicate event detection</h4>
+    <p>To ensure idempotent event handling, the DAO uses a <strong>conditional update expression</strong>. Each item stores the maximum <code>eventId</code> it has processed, tracked per aggregate source (e.g., per Order aggregate, per Kitchen aggregate). The update only succeeds if the incoming event's ID is greater than the stored maximum. If the condition fails, the event is a duplicate and the DAO skips it.</p>
+
+    <div class="info-box key-point-box">
+      <p><strong>Implementation summary:</strong> Use <code>UpdateItem</code> for concurrency safety, conditional expressions for duplicate detection, a GSI for customer-centric queries, a keywords set for simple text search, and <code>LastEvaluatedKey</code> tokens for pagination.</p>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>DynamoDB concept</th>
+          <th>Purpose in this implementation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>orderId</code> partition key</td>
+          <td>Uniquely identifies each order item in the table</td>
+        </tr>
+        <tr>
+          <td>GSI on (<code>consumerId</code>, <code>orderCreationDate</code>)</td>
+          <td>Enables querying orders by customer, sorted by date</td>
+        </tr>
+        <tr>
+          <td>Keywords set attribute</td>
+          <td>Supports keyword filtering via <code>contains()</code></td>
+        </tr>
+        <tr>
+          <td><code>UpdateItem</code></td>
+          <td>Atomic field-level updates for concurrency safety</td>
+        </tr>
+        <tr>
+          <td>Conditional expression (max eventId)</td>
+          <td>Detects and skips duplicate events</td>
+        </tr>
+        <tr>
+          <td><code>LastEvaluatedKey</code></td>
+          <td>Opaque token for forward-only pagination</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Takeaways -->
+  <!-- ================================================================== -->
+  <section class="takeaways">
+    <h3>Key Takeaways</h3>
+    <ul>
+      <li>In a microservice architecture, data is spread across services with private databases. You cannot use distributed SQL joins. Two patterns solve this: <strong>API Composition</strong> (simple) and <strong>CQRS</strong> (powerful).</li>
+      <li><strong>API Composition</strong>: an API Composer queries multiple provider services and combines results in memory. Place the composer in the client, API Gateway, or a standalone service. Use parallel calls for lower latency.</li>
+      <li>API Composition drawbacks: increased overhead, reduced availability (mitigate with caching or incomplete data), and no transactional consistency across providers.</li>
+      <li>Use <strong>CQRS</strong> when API Composition would require inefficient in-memory joins, when the provider's database does not support the required query type, or when the query logic does not belong in the data-owning service.</li>
+      <li>CQRS splits data handling into a <strong>command side</strong> (CUD + event publishing) and a <strong>query side</strong> (views + event handlers). Query-only services subscribe to events from multiple services.</li>
+      <li>CQRS benefits: efficient queries, diverse database choices, separation of concerns, and support for event-sourced applications. Drawbacks: architectural complexity and replication lag (eventual consistency).</li>
+      <li>Choose the view datastore based on query needs: document store, text search engine, graph DB, RDBMS, or key-value store.</li>
+      <li>The DAO must handle concurrent updates (atomic field-level updates), idempotent event handling (track max eventId per source), and replication lag (event ID tokens or optimistic UI updates).</li>
+      <li>Build new views by replaying archived events (e.g., from S3 via Spark). Rebuild views efficiently using incremental snapshots.</li>
+      <li>DynamoDB implementation: use <code>UpdateItem</code> for concurrency safety, conditional expressions for duplicate detection, a GSI for customer queries, a keywords set for text filtering, and <code>LastEvaluatedKey</code> for pagination.</li>
+    </ul>
+  </section>
+
+  <!-- Chapter Nav -->
+  <div class="chapter-nav">
+    <a href="ch5.html" class="prev">Chapter 5</a>
+    <a href="index.html" class="next">Home</a>
+  </div>
+
+</div>
+
+<a href="#top" class="back-to-top">&#8593;</a>
+
+<footer class="site-footer">
+  Study material based on validated concept extractions from "Microservices Patterns" by Chris Richardson.
+</footer>
+
+</body>
+</html>
