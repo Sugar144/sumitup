@@ -3,92 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Microservices Patterns — Study Guide</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>University Study Guide</title>
 </head>
 <body>
-
-<header class="site-header">
-  <h1>Microservices Patterns</h1>
-  <p class="subtitle">Study Guide — Key Concepts &amp; Patterns</p>
-  <p class="book-ref">Based on "Microservices Patterns" by Chris Richardson</p>
-</header>
-
-<nav class="nav-bar">
-  <a href="index.html" class="active">Home</a>
-  <a href="ch1.html">Ch 1</a>
-  <a href="ch2.html">Ch 2</a>
-  <a href="ch3.html">Ch 3</a>
-  <a href="ch4.html">Ch 4</a>
-  <a href="ch5.html">Ch 5</a>
-  <a href="ch7.html">Ch 7</a>
-</nav>
-
-<div class="page-container">
-
-  <section style="margin: 2rem 0;">
-    <h2 style="color: var(--blue-700); font-size: 1.3rem; margin-bottom: 0.5rem;">About This Guide</h2>
-    <p>This study guide covers validated key concepts extracted from selected chapters of <em>Microservices Patterns</em> by Chris Richardson. It is designed for efficient learning and review. Each chapter summary preserves the original book numbering and explains concepts in a shorter, clearer way.</p>
-    <p>Chapters covered: 1, 2, 3, 4, 5, and 7.</p>
-  </section>
-
-  <div class="chapter-grid">
-
-    <a href="ch1.html" class="chapter-card">
-      <div class="card-number">Chapter 1</div>
-      <div class="card-title">Escaping Monolithic Hell</div>
-      <p class="card-desc">The problems of monolithic architecture, the scale cube, benefits and drawbacks of microservices, the pattern language, and organizational considerations.</p>
-    </a>
-
-    <a href="ch2.html" class="chapter-card">
-      <div class="card-number">Chapter 2</div>
-      <div class="card-title">Decomposition Strategies</div>
-      <p class="card-desc">Software architecture fundamentals, architectural styles, decomposing by business capability or subdomain (DDD), obstacles, and defining service APIs.</p>
-    </a>
-
-    <a href="ch3.html" class="chapter-card">
-      <div class="card-number">Chapter 3</div>
-      <div class="card-title">Interprocess Communication in a Microservice Architecture</div>
-      <p class="card-desc">IPC styles, API design and evolution, REST, gRPC, circuit breakers, service discovery, messaging, transactional outbox, and improving availability.</p>
-    </a>
-
-    <a href="ch4.html" class="chapter-card">
-      <div class="card-number">Chapter 4</div>
-      <div class="card-title">Managing Transactions with Sagas</div>
-      <p class="card-desc">The distributed transaction problem, the Saga pattern, choreography vs. orchestration, isolation anomalies and countermeasures, and implementation architecture.</p>
-    </a>
-
-    <a href="ch5.html" class="chapter-card">
-      <div class="card-number">Chapter 5</div>
-      <div class="card-title">Designing Business Logic in a Microservice Architecture</div>
-      <p class="card-desc">Transaction Script vs. Domain Model, DDD aggregates, aggregate rules, domain events, and service architecture with Kitchen and Order services.</p>
-    </a>
-
-    <a href="ch7.html" class="chapter-card">
-      <div class="card-number">Chapter 7</div>
-      <div class="card-title">Implementing Queries in a Microservice Architecture</div>
-      <p class="card-desc">The API Composition pattern, CQRS pattern, designing CQRS views, and a DynamoDB implementation example.</p>
-    </a>
-
-  </div>
-
-  <section class="takeaways" style="margin-top: 2rem;">
-    <h3>Overall Concept Map</h3>
-    <ul>
-      <li><strong>Chapter 1</strong> introduces the motivation: why monoliths fail at scale and why microservices help.</li>
-      <li><strong>Chapter 2</strong> explains how to break an application into services using business capabilities or DDD subdomains.</li>
-      <li><strong>Chapter 3</strong> covers how services communicate — synchronously (REST, gRPC) or asynchronously (messaging).</li>
-      <li><strong>Chapter 4</strong> solves the data consistency problem across services using the Saga pattern.</li>
-      <li><strong>Chapter 5</strong> shows how to design business logic using aggregates and domain events.</li>
-      <li><strong>Chapter 7</strong> addresses querying data spread across services using API Composition and CQRS.</li>
-    </ul>
-  </section>
-
-</div>
-
-<footer class="site-footer">
-  Based on "Microservices Patterns" by Chris Richardson
-</footer>
-
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

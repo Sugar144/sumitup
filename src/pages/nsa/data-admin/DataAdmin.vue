@@ -1,0 +1,277 @@
+<template>
+  <div>
+  <header class="chapter-header" style="background: linear-gradient(135deg, #1a3c4a, #2c7a7b);">
+    <div class="breadcrumb">
+      <router-link to="/">Study Guide</router-link> &rsaquo;
+      <router-link to="/nsa">NSA</router-link> &rsaquo;
+      Data Administration
+    </div>
+    <h1>Data Administration</h1>
+    <p class="chapter-desc">Where organisational data lives, how to retrieve it, how to protect it, and the technologies that make large-scale data management possible.</p>
+    <div class="stats-bar">
+      <span class="stat-badge">7 Big Data Properties</span>
+      <span class="stat-badge">3 NoSQL Types</span>
+      <span class="stat-badge">3 Backup Types</span>
+      <span class="stat-badge">3 Security Pillars</span>
+    </div>
+  </header>
+
+  <div class="page-container">
+
+    <div class="toc">
+      <h2>Table of Contents</h2>
+      <ol>
+        <li class="toc-section"><a href="#s1">1. Data and Organisations</a></li>
+        <li class="toc-section">
+          <a href="#s2">2. Where Is the Information?</a>
+          <ol><li><a href="#s2-1">2.1 Possible solutions</a></li></ol>
+        </li>
+        <li class="toc-section">
+          <a href="#s3">3. Information Retrieval</a>
+          <ol>
+            <li><a href="#s3-1">3.1 Management queries</a></li>
+            <li><a href="#s3-2">3.2 Database servers</a></li>
+            <li><a href="#s3-3">3.3 Large-scale data processing</a></li>
+            <li><a href="#s3-4">3.4 ERP</a></li>
+            <li><a href="#s3-5">3.5 Cloud data management</a></li>
+          </ol>
+        </li>
+        <li class="toc-section">
+          <a href="#s4">4. Information Protection</a>
+          <ol>
+            <li><a href="#s4-1">4.1 Network security &amp; backups</a></li>
+            <li><a href="#s4-2">4.2 Database security</a></li>
+          </ol>
+        </li>
+        <li class="toc-section"><a href="#takeaways">Key Takeaways</a></li>
+      </ol>
+    </div>
+
+    <!-- ============================== -->
+    <!-- 1. Data and Organisations -->
+    <!-- ============================== -->
+    <h2 class="section-title" id="s1">1. Data and Organisations</h2>
+
+    <div class="content-section">
+      <p>Information is currently one of the most valuable assets in any organisation. It is the raw material that feeds the IT system. Understanding where data is and how to manage it is fundamental.</p>
+
+      <div class="pattern-summary">
+        <h4>Data vs. Information</h4>
+        <div class="ps-row"><span class="ps-label">Data:</span> <span>A record of events. Raw, unprocessed facts (e.g., the number 70293).</span></div>
+        <div class="ps-row"><span class="ps-label">Information:</span> <span>Data that has been processed to make it meaningful (e.g., 70293 = 7 February 1993).</span></div>
+        <div class="ps-row"><span class="ps-label">In practice:</span> <span>The two terms are often used interchangeably in IT, since processing data to make sense of it can happen at many points.</span></div>
+      </div>
+
+      <p>Organisations constantly generate large amounts of data, which computer systems process and distribute to increase overall efficiency. The IT system's goal is to <strong>store information so it can be easily retrieved later</strong>.</p>
+
+      <p>"Handling information" covers several operations:</p>
+      <ul>
+        <li>Adding new information to existing data</li>
+        <li>Deleting obsolete information</li>
+        <li>Modifying incorrect information</li>
+        <li>Linking different pieces of information to construct new insights, checking consistency, reducing redundancy, or finding new relationships</li>
+      </ul>
+
+      <p>The data interaction chain has three components: <strong>agents</strong> (people, sensors, or external entities that access data), <strong>programs</strong> (used to access data in an orderly and controlled way), and <strong>data</strong> (the stored information itself).</p>
+
+      <div class="info-box key-point-box">
+        <p><strong>Key point:</strong> The IT system collects, stores, handles and presents information to users. Programs, together with the operating system, are responsible for all necessary controls to prevent unwanted access to the organisation's data.</p>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- 2. Where Is the Information? -->
+    <!-- ============================== -->
+    <h2 class="section-title" id="s2">2. Where Is the Information?</h2>
+
+    <div class="content-section">
+      <p>In the real world, data is scattered. Different applications store data in different formats, in different locations, on different machines. This creates several challenges:</p>
+      <ul>
+        <li>Data is stored in files with varying formats</li>
+        <li>Data is not always stored where it is needed</li>
+        <li>Different sources (sensors, people, web forms) generate data differently</li>
+        <li>Critical information may be stored in unknown locations</li>
+      </ul>
+
+      <div class="info-box warning-box">
+        <p><strong>Problem:</strong> Information can be stored in any directory, on any partition, on any disk, on servers or workstations — even on laptops. In extreme cases, duplicate information exists on different machines with different operating systems and different file systems. The IT department may not even know where critical data resides.</p>
+      </div>
+
+      <div class="info-box analogy-box">
+        <p><strong>Analogy:</strong> Imagine a library where books are not catalogued. Some are on shelves, some in desk drawers, some in people's bags. You know the information exists somewhere, but finding it requires searching everywhere. Centralising data on servers is like building a proper catalogue system.</p>
+      </div>
+
+      <h3 class="subsection-title" id="s2-1">2.1 Possible solutions</h3>
+      <ol>
+        <li><strong>Application chart analysis:</strong> Using the application chart and general user design to determine which software users have access to and where the information it generates is located. Ensure proper security, protection, and recovery mechanisms.</li>
+        <li><strong>Handling "uncontrollable" information:</strong> Office software (spreadsheets, word processors, small databases) should store data on the user's <strong>private network drive</strong>, which should be backed up daily.</li>
+        <li><strong>User training:</strong> Educate users to save information on their personal network drive rather than on the local drive. This "IT culture" prevents information from being scattered across all disks.</li>
+      </ol>
+
+      <div class="info-box note-box">
+        <p><strong>Mobile computing challenge:</strong> Mobile devices need autonomy while also syncing with the organisation's systems. Key questions: What happens to sensitive data on mobile devices? How do disconnected devices synchronise modified data? How do they connect remotely to the corporate network?</p>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- 3. Information Retrieval -->
+    <!-- ============================== -->
+    <h2 class="section-title" id="s3">3. Information Retrieval</h2>
+
+    <div class="content-section">
+      <p>As the organisation constantly generates data, users frequently need to access new information. The administrator must be familiar with all organisational databases and know where information is located, have a recovery method (backups), and have meta-information about the data.</p>
+
+      <h3 class="subsection-title" id="s3-1">3.1 Management queries</h3>
+      <p>Management views the IT system as a data warehouse and queries it for decision-making. Questions like "Which product generated the most profit?" or "Which employees were least productive?" require combining data from multiple sources.</p>
+
+      <div class="info-box note-box">
+        <p><strong>The problem:</strong> Even when data is centralised on servers, information arrives in completely heterogeneous formats across different files. The software needed to handle this can be extremely complex. Simply having all information on servers is not enough — it must be in a queryable, standardised form.</p>
+      </div>
+
+      <h3 class="subsection-title" id="s3-2">3.2 Database servers</h3>
+      <p>Database servers emerged to efficiently handle all corporate information and make it useful for decision-making. Two main types exist:</p>
+
+      <h4 class="subsubsection-title">Relational databases</h4>
+      <p>Collections of items with defined relationships, organised into tables. Key features:</p>
+      <ul>
+        <li><strong>Data integrity</strong> based on relationships between fields</li>
+        <li><strong>ACID compliance</strong> (Atomicity, Consistency, Isolation, Durability)</li>
+        <li><strong>Transactional</strong> — each request is independent and forms a single logical work unit</li>
+        <li>Queries performed using <strong>SQL</strong></li>
+      </ul>
+
+      <h4 class="subsubsection-title">Non-relational (NoSQL) databases</h4>
+      <p>Data structures that do not support SQL and do not comply with ACID. They appeared alongside big data and use structures that are easier to scale.</p>
+
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Type</th><th>Data model</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Key-value</strong></td><td>Each key is associated with a single value (associative arrangement)</td><td>Simple lookups, caching, session management. Easy to scale horizontally.</td></tr>
+          <tr><td><strong>Document</strong></td><td>Stores and queries data as JSON documents (flexible, semi-structured, hierarchical)</td><td>Catalogues, user profiles, content management. Each document is unique and evolves over time.</td></tr>
+          <tr><td><strong>Graph</strong></td><td>Nodes and edges hold information; displays relationships visually</td><td>Highly interconnected data, social networks, relationship analysis in large information networks.</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="subsection-title" id="s3-3">3.3 Large-scale data processing</h3>
+
+      <h4 class="subsubsection-title">Big Data</h4>
+      <p>Large-scale data analysis from various sources whose volume exceeds traditional data processing capacity. Big data is characterised by <strong>seven properties</strong>:</p>
+
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Property</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Speed</strong></td><td>Information must be processed in real time, executing increasingly complex algorithms in less time.</td></tr>
+          <tr><td><strong>Variety</strong></td><td>Data comes in many formats — from tiny tweets to large high-resolution videos. Unstructured data is growing fastest.</td></tr>
+          <tr><td><strong>Value</strong></td><td>A core quality in analysis that directly influences how data is handled throughout its life cycle.</td></tr>
+          <tr><td><strong>Variability</strong></td><td>Data changes fast, so models and processes need regular checking.</td></tr>
+          <tr><td><strong>Volume</strong></td><td>The quantity of data keeps growing. Storage and architecture must scale accordingly.</td></tr>
+          <tr><td><strong>Accuracy (Veracity)</strong></td><td>Collected information must be accurate and high-quality for reliable analysis.</td></tr>
+          <tr><td><strong>Visualisation</strong></td><td>Presenting data in an easily understandable format is essential to provide business value.</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="subsubsection-title">MapReduce</h4>
+      <p>A processing technique involving an initial <strong>map</strong> phase (filtering, sorting data in parallel on multiple servers), followed by a <strong>reduce</strong> phase (grouping keys and aggregating values). This enables efficient processing of massive datasets.</p>
+
+      <div class="pattern-summary">
+        <h4>Hadoop</h4>
+        <div class="ps-row"><span class="ps-label">What:</span> <span>Open source framework for storing, processing and analysing big data.</span></div>
+        <div class="ps-row"><span class="ps-label">Storage:</span> <span>HDFS (Hadoop Distributed File System) — distributes data across nodes with multiple replicas for high availability.</span></div>
+        <div class="ps-row"><span class="ps-label">Processing:</span> <span>Uses MapReduce combined with HDFS for parallel computation.</span></div>
+      </div>
+
+      <div class="pattern-summary">
+        <h4>Spark</h4>
+        <div class="ps-row"><span class="ps-label">What:</span> <span>Alternative to Hadoop focused on fast big data processing.</span></div>
+        <div class="ps-row"><span class="ps-label">Key advantage:</span> <span>Processes data in memory, reducing slower disk read/write operations.</span></div>
+        <div class="ps-row"><span class="ps-label">Flexibility:</span> <span>Reads from different file types (HDFS, Amazon S3, Google Cloud) with support for streaming, Python APIs, and iterative algorithms.</span></div>
+      </div>
+
+      <h3 class="subsection-title" id="s3-4">3.4 ERP (Enterprise Resource Planning)</h3>
+      <p>An ERP is a set of integrated modules (accounting, billing, payroll, etc.) running on a database server. By integrating and automating many operational aspects, ERPs streamline data input and reporting, centralising all information and enabling powerful queries.</p>
+
+      <h3 class="subsection-title" id="s3-5">3.5 Cloud data management</h3>
+      <p>Migrating data to the cloud requires attention to several factors:</p>
+      <ul>
+        <li><strong>Data security in transit</strong> — always use secure protocols (HTTPS)</li>
+        <li><strong>Security in storage</strong> — manage encryption keys (customer-provided or service provider-managed)</li>
+        <li><strong>Access management</strong> — respect file access permissions even in the cloud</li>
+        <li><strong>Backups &amp; disaster recovery</strong> — cloud offers more options, but copies and continuity mechanisms remain essential</li>
+        <li><strong>Data governance &amp; quality</strong> — ensure information is consistent with a single source of truth</li>
+        <li><strong>Data Leak Prevention (DLP)</strong> — classify and protect files individually (e.g., Microsoft Information Protection)</li>
+      </ul>
+    </div>
+
+    <!-- ============================== -->
+    <!-- 4. Information Protection -->
+    <!-- ============================== -->
+    <h2 class="section-title" id="s4">4. Information Protection</h2>
+
+    <div class="content-section">
+      <p>Information protection has two dimensions: protecting against <strong>unwanted access</strong> and protecting against <strong>loss</strong>.</p>
+
+      <h3 class="subsection-title" id="s4-1">4.1 Network security &amp; backups</h3>
+      <p>A well-designed user environment is the first step in preventing unauthorised access. Beyond that, intrusion prevention is essential — make the system as secure as possible.</p>
+
+      <p>Backup policies are critical to business continuity. A comprehensive backup policy covers:</p>
+
+      <table class="comparison-table">
+        <thead><tr><th>Backup type</th><th>What it copies</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Complete (Full)</strong></td><td>All data — the entire dataset.</td></tr>
+          <tr><td><strong>Incremental</strong></td><td>Only data that has changed since the last backup (any type).</td></tr>
+          <tr><td><strong>Differential</strong></td><td>Data that has changed since the last complete backup.</td></tr>
+        </tbody>
+      </table>
+
+      <p>Additional backup considerations: frequency, storage cost, regulatory compliance, encryption, secure storage location, cloud legal aspects, and proper disposal of expired backups.</p>
+
+      <h3 class="subsection-title" id="s4-2">4.2 Database security</h3>
+      <p>Database security rests on three pillars:</p>
+
+      <div class="pattern-summary">
+        <h4>The CIA Triad of Database Security</h4>
+        <div class="ps-row"><span class="ps-label">Confidentiality:</span> <span>Not providing data to unauthorised users. Includes privacy and personal data protection. DBMSs use user profiles, roles, and groups with explicit/implicit authorisation.</span></div>
+        <div class="ps-row"><span class="ps-label">Accessibility:</span> <span>Information must be available when users need it. Physical redundancy is the basic principle behind recovery. Transactions ensure atomic operations — either all operations complete or none do.</span></div>
+        <div class="ps-row"><span class="ps-label">Integrity:</span> <span>Ensuring data has not been corrupted. Protects against semantically inconsistent operations and interference from concurrent access.</span></div>
+      </div>
+
+      <div class="info-box analogy-box">
+        <p><strong>Analogy:</strong> Think of a bank vault. <strong>Confidentiality</strong> means only authorised people can open it. <strong>Accessibility</strong> means the vault is always available during business hours — not locked permanently due to a broken mechanism. <strong>Integrity</strong> means the money inside has not been counterfeited or tampered with.</p>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- Key Takeaways -->
+    <!-- ============================== -->
+    <div class="takeaways" id="takeaways">
+      <h3>Key Takeaways</h3>
+      <ul>
+        <li><strong>Data</strong> is a record of events; <strong>information</strong> is data processed to make it meaningful. In practice, the terms are often used interchangeably.</li>
+        <li>Data in organisations is frequently <strong>scattered</strong> across workstations, servers, and laptops in heterogeneous formats. Centralising it on servers is a critical first step.</li>
+        <li>Three solutions help manage data location: application chart analysis, storing "uncontrollable" data on network drives, and user training.</li>
+        <li><strong>Relational databases</strong> (SQL, ACID-compliant) and <strong>NoSQL databases</strong> (key-value, document, graph) serve different use cases.</li>
+        <li>Big data has <strong>7 properties</strong>: Speed, Variety, Value, Variability, Volume, Accuracy, and Visualisation.</li>
+        <li><strong>MapReduce</strong> enables parallel processing of large datasets; <strong>Hadoop</strong> (HDFS + MapReduce) and <strong>Spark</strong> (in-memory processing) are the main frameworks.</li>
+        <li><strong>ERPs</strong> integrate all organisational modules on a single database, enabling powerful cross-functional queries.</li>
+        <li>Cloud data management requires attention to transit security, storage encryption, access control, backups, governance, and DLP.</li>
+        <li>Three backup types: <strong>complete</strong> (everything), <strong>incremental</strong> (changes since last backup), <strong>differential</strong> (changes since last full backup).</li>
+        <li>Database security rests on <strong>confidentiality</strong> (access control), <strong>accessibility</strong> (availability + transactions), and <strong>integrity</strong> (consistency + concurrency control).</li>
+      </ul>
+    </div>
+
+    <div class="chapter-nav">
+      <router-link to="/nsa/network-admin" class="prev">&larr; Network Administration</router-link>
+      <router-link to="/nsa" class="next">NSA Overview &rarr;</router-link>
+    </div>
+
+  </div>
+  </div>
+</template>
+
+<script setup>
+</script>

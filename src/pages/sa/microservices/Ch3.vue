@@ -1,0 +1,748 @@
+<template>
+  <div>
+    <header class="chapter-header">
+      <div class="breadcrumb"><router-link to="/">Study Guide</router-link> &rsaquo; <router-link to="/sa">SA</router-link> &rsaquo; <router-link to="/sa/microservices">Microservices</router-link> &rsaquo; Chapter 3</div>
+      <h1>Chapter 3: Interprocess Communication in a Microservice Architecture</h1>
+      <p class="chapter-desc">How services talk to each other — interaction styles, REST, gRPC, messaging, and strategies for availability and reliability.</p>
+      <div class="stats-bar">
+        <span class="stat-badge">13 Patterns</span>
+        <span class="stat-badge">19 Definitions</span>
+        <span class="stat-badge">6 Principles</span>
+        <span class="stat-badge">6 Problems</span>
+        <span class="stat-badge">10 Technologies</span>
+        <span class="stat-badge">54 Total Concepts</span>
+      </div>
+    </header>
+
+    <div class="page-container">
+
+      <!-- Table of Contents -->
+      <nav class="toc">
+        <h2>Table of Contents</h2>
+        <ol>
+          <li class="toc-section">
+            <a href="#s3-1">3.1 Overview of Interprocess Communication</a>
+            <ol>
+              <li><a href="#s3-1-1">Interaction Styles</a></li>
+              <li><a href="#s3-1-2">Defining APIs in a Microservice Architecture</a></li>
+              <li><a href="#s3-1-3">Evolving APIs</a></li>
+              <li><a href="#s3-1-4">Message Formats</a></li>
+            </ol>
+          </li>
+          <li class="toc-section">
+            <a href="#s3-2">3.2 Synchronous Remote Procedure Invocation Pattern</a>
+            <ol>
+              <li><a href="#s3-2-1">Using REST</a></li>
+              <li><a href="#s3-2-2">Using gRPC</a></li>
+              <li><a href="#s3-2-3">Handling Partial Failure Using the Circuit Breaker Pattern</a></li>
+              <li><a href="#s3-2-4">Using Service Discovery</a></li>
+            </ol>
+          </li>
+          <li class="toc-section">
+            <a href="#s3-3">3.3 Asynchronous Messaging Pattern</a>
+            <ol>
+              <li><a href="#s3-3-1">Overview of Messaging</a></li>
+              <li><a href="#s3-3-2">Implementing Interaction Styles Using Messaging</a></li>
+              <li><a href="#s3-3-3">Creating an API Specification for a Messaging-Based Service API</a></li>
+              <li><a href="#s3-3-4">Using a Message Broker</a></li>
+              <li><a href="#s3-3-5">Competing Receivers and Message Ordering</a></li>
+              <li><a href="#s3-3-6">Handling Duplicate Messages</a></li>
+              <li><a href="#s3-3-7">Transactional Messaging</a></li>
+              <li><a href="#s3-3-8">Libraries and Frameworks for Messaging</a></li>
+            </ol>
+          </li>
+          <li class="toc-section">
+            <a href="#s3-4">3.4 Using Asynchronous Messaging to Improve Availability</a>
+            <ol>
+              <li><a href="#s3-4-1">Synchronous Communication Reduces Availability</a></li>
+              <li><a href="#s3-4-2">Eliminating Synchronous Interaction</a></li>
+            </ol>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- ================================================================== -->
+      <!-- 3.1 Overview of IPC -->
+      <!-- ================================================================== -->
+      <h2 class="section-title" id="s3-1">3.1 Overview of Interprocess Communication</h2>
+
+      <div class="content-section">
+        <p>In a monolith, modules call each other through language-level method calls. In a microservice architecture, services run in separate processes or on separate machines. They must use an interprocess communication (IPC) mechanism to work together. Choosing the right IPC mechanism is one of the most important architectural decisions you will make.</p>
+      </div>
+
+      <!-- 3.1.1 Interaction Styles -->
+      <h3 class="subsection-title" id="s3-1-1">Interaction Styles</h3>
+      <div class="content-section">
+        <p>Interaction styles are classified along two dimensions. The first dimension is <strong>how many services receive each request</strong>: one-to-one or one-to-many. The second dimension is <strong>timing</strong>: synchronous (the client waits for a response) or asynchronous (the client does not block).</p>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>One-to-One</th>
+              <th>One-to-Many</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Synchronous</strong></td>
+              <td>Request / Response</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><strong>Asynchronous</strong></td>
+              <td>Asynchronous Request / Response, One-way Notification</td>
+              <td>Publish / Subscribe, Publish / Async Responses</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>This taxonomy guides the IPC choice. The two main pattern categories are the <strong>Remote Procedure Invocation (RPI)</strong> pattern for synchronous communication and the <strong>Messaging</strong> pattern for asynchronous communication.</p>
+
+        <div class="info-box key-point-box">
+          <p><strong>Author's recommendation:</strong> Prefer asynchronous messaging for communication between services. Use REST for external-facing APIs.</p>
+        </div>
+
+        <div class="info-box note-box">
+          <p><strong>Key insight:</strong> The choice between synchronous and asynchronous IPC directly impacts availability. Synchronous calls reduce it; asynchronous messaging improves it.</p>
+        </div>
+      </div>
+
+      <!-- 3.1.2 Defining APIs -->
+      <h3 class="subsection-title" id="s3-1-2">Defining APIs in a Microservice Architecture</h3>
+      <div class="content-section">
+        <p>An API is a contract between a service and its clients. Getting this contract right is important because changes later can break other services.</p>
+
+        <p>Use an <strong>API-first design</strong> approach: define the API before you write any implementation code. Share the draft with client teams, get their feedback, and iterate. This avoids costly rework after coding starts.</p>
+
+        <p>The interface definition language (IDL) you use depends on the IPC mechanism:</p>
+        <ul>
+          <li><strong>REST</strong> — Open API Specification (Swagger)</li>
+          <li><strong>gRPC</strong> — Protocol Buffers definition files</li>
+          <li><strong>Messaging</strong> — informal documentation of message channels and message types</li>
+        </ul>
+      </div>
+
+      <!-- 3.1.3 Evolving APIs -->
+      <h3 class="subsection-title" id="s3-1-3">Evolving APIs</h3>
+      <div class="content-section">
+        <p>APIs change over time. In a microservice architecture, you cannot force all clients to update at once because each service is deployed independently. You need a strategy to evolve APIs without breaking existing clients.</p>
+
+        <h4 class="subsubsection-title">Semantic Versioning</h4>
+        <p>Use <strong>Semantic Versioning</strong> to communicate the nature of changes:</p>
+        <ul>
+          <li><strong>MAJOR</strong> — breaking, incompatible change</li>
+          <li><strong>MINOR</strong> — new backward-compatible feature</li>
+          <li><strong>PATCH</strong> — backward-compatible bugfix</li>
+        </ul>
+
+        <h4 class="subsubsection-title">The Robustness Principle</h4>
+        <p>The <strong>Robustness Principle</strong> says: "Be conservative in what you send, be liberal in what you accept." Services should ignore unknown fields in requests and responses. This makes backward-compatible evolution much easier.</p>
+
+        <h4 class="subsubsection-title">Handling Breaking Changes</h4>
+        <p>When a breaking change is unavoidable, you must support <strong>multiple API versions simultaneously</strong> for a transition period. Two common approaches:</p>
+        <ul>
+          <li><strong>URL versioning</strong> — embed the version in the URL (e.g., <code>/v1/orders</code>, <code>/v2/orders</code>)</li>
+          <li><strong>Content negotiation</strong> — use HTTP headers to specify the version</li>
+        </ul>
+      </div>
+
+      <!-- 3.1.4 Message Formats -->
+      <h3 class="subsection-title" id="s3-1-4">Message Formats</h3>
+      <div class="content-section">
+        <p>The format you choose for encoding messages affects efficiency, readability, and compatibility. There are two broad categories.</p>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Text (JSON / XML)</th>
+              <th>Binary (Protocol Buffers / Avro)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Readability</td>
+              <td>Human-readable, self-describing</td>
+              <td>Not human-readable</td>
+            </tr>
+            <tr>
+              <td>Size</td>
+              <td>Verbose</td>
+              <td>Compact</td>
+            </tr>
+            <tr>
+              <td>Parsing speed</td>
+              <td>Slower</td>
+              <td>Faster</td>
+            </tr>
+            <tr>
+              <td>API-first</td>
+              <td>Optional</td>
+              <td>Forced (schema required)</td>
+            </tr>
+            <tr>
+              <td>Evolution</td>
+              <td>Easy with Robustness Principle</td>
+              <td>Easy (Protocol Buffers); Avro needs schema to read</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>Protocol Buffers</strong> uses tagged fields, which makes API evolution easier because the reader can skip unknown tags. <strong>Avro</strong> requires the writer's schema to read data, making evolution slightly harder.</p>
+
+        <div class="info-box key-point-box">
+          <p><strong>Principle:</strong> Always use a cross-language format (like JSON or Protocol Buffers) even if your project currently uses only one language. This keeps you flexible for the future.</p>
+        </div>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 3.2 Synchronous RPI -->
+      <!-- ================================================================== -->
+      <h2 class="section-title" id="s3-2">3.2 Synchronous Remote Procedure Invocation Pattern</h2>
+
+      <div class="content-section">
+        <p>In the <strong>Remote Procedure Invocation (RPI)</strong> pattern, a client sends a request to a service and waits for a response. This is the most familiar IPC style. Two popular implementations are REST and gRPC.</p>
+
+        <div class="pattern-summary">
+          <h4>Pattern: Remote Procedure Invocation (RPI)</h4>
+          <div class="ps-row"><span class="ps-label">Problem</span> <span>How does a client invoke a service synchronously?</span></div>
+          <div class="ps-row"><span class="ps-label">Solution</span> <span>The client sends a request and blocks until it receives a response.</span></div>
+          <div class="ps-row"><span class="ps-label">Implementations</span> <span>REST, gRPC</span></div>
+          <div class="ps-row"><span class="ps-label">Requirements</span> <span>Circuit Breaker + Service Discovery are needed for reliable RPI.</span></div>
+        </div>
+      </div>
+
+      <!-- 3.2.1 REST -->
+      <h3 class="subsection-title" id="s3-2-1">Using REST</h3>
+      <div class="content-section">
+        <p>REST is an IPC mechanism that uses HTTP. It models the domain as <strong>resources</strong> (e.g., <code>/orders</code>, <code>/customers/123</code>) and uses standard HTTP verbs (GET, POST, PUT, DELETE) to manipulate them.</p>
+
+        <h4 class="subsubsection-title">REST Maturity Model</h4>
+        <p>Leonard Richardson defined four levels of REST maturity:</p>
+        <ul>
+          <li><strong>Level 0</strong> — clients invoke a single endpoint using POST (just HTTP as transport)</li>
+          <li><strong>Level 1</strong> — introduces resources with distinct URLs</li>
+          <li><strong>Level 2</strong> — uses HTTP verbs correctly (GET, POST, PUT, DELETE)</li>
+          <li><strong>Level 3</strong> — HATEOAS: responses include links that tell the client what it can do next</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Benefits of REST</h4>
+        <ul>
+          <li>Simple and familiar to most developers</li>
+          <li>Easy to test with tools like <code>curl</code> or Postman</li>
+          <li>Firewall-friendly (uses standard HTTP/HTTPS)</li>
+          <li>No intermediate broker needed</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Drawbacks of REST</h4>
+        <ul>
+          <li>Only supports request/response interaction style</li>
+          <li>Fetching data from multiple resources often requires multiple round trips</li>
+          <li>Mapping complex operations to HTTP verbs can be awkward</li>
+        </ul>
+
+        <div class="info-box note-box">
+          <p><strong>Alternative:</strong> Technologies like <strong>GraphQL</strong> and <strong>Falcor</strong> let clients fetch exactly the data they need in a single request, which is more efficient than REST for complex data fetching.</p>
+        </div>
+      </div>
+
+      <!-- 3.2.2 gRPC -->
+      <h3 class="subsection-title" id="s3-2-2">Using gRPC</h3>
+      <div class="content-section">
+        <p>gRPC is a framework for making synchronous and streaming remote calls. It uses <strong>Protocol Buffers</strong> as its IDL and binary message format, and runs over <strong>HTTP/2</strong>.</p>
+
+        <h4 class="subsubsection-title">Benefits of gRPC</h4>
+        <ul>
+          <li>Supports rich operation definitions (not limited to HTTP verbs)</li>
+          <li>Compact and efficient binary Protocol Buffers format</li>
+          <li>Supports bidirectional streaming</li>
+          <li>Works across many programming languages</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Drawbacks of gRPC</h4>
+        <ul>
+          <li>JavaScript clients in browsers have limited support</li>
+          <li>HTTP/2 can cause problems with older firewalls and load balancers</li>
+        </ul>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>REST</th>
+              <th>gRPC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Protocol</td>
+              <td>HTTP/1.1 (typically)</td>
+              <td>HTTP/2</td>
+            </tr>
+            <tr>
+              <td>Format</td>
+              <td>JSON (text)</td>
+              <td>Protocol Buffers (binary)</td>
+            </tr>
+            <tr>
+              <td>Operations</td>
+              <td>Limited to HTTP verbs</td>
+              <td>Any operation defined in .proto file</td>
+            </tr>
+            <tr>
+              <td>Streaming</td>
+              <td>Not native</td>
+              <td>Bidirectional streaming</td>
+            </tr>
+            <tr>
+              <td>Browser support</td>
+              <td>Excellent</td>
+              <td>Limited</td>
+            </tr>
+            <tr>
+              <td>Firewall compatibility</td>
+              <td>High</td>
+              <td>Can be problematic</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3.2.3 Circuit Breaker -->
+      <h3 class="subsection-title" id="s3-2-3">Handling Partial Failure Using the Circuit Breaker Pattern</h3>
+      <div class="content-section">
+        <p>In a distributed system, a service you depend on may be slow or unavailable. This is called a <strong>partial failure</strong>. If you do nothing, the problem cascades: your service blocks waiting for the broken service, your threads get exhausted, and you become unavailable too.</p>
+
+        <div class="info-box warning-box">
+          <p><strong>Danger:</strong> Cascading failure is one of the biggest risks in synchronous microservice communication. A single slow service can bring down an entire chain of dependent services.</p>
+        </div>
+
+        <h4 class="subsubsection-title">Three-Mechanism Defense</h4>
+        <p>Use all three mechanisms together to handle partial failure:</p>
+        <ol>
+          <li><strong>Network timeouts</strong> — never block indefinitely; always set a timeout on remote calls</li>
+          <li><strong>Limit outstanding requests</strong> — cap the number of concurrent requests to a service; reject immediately if the limit is reached</li>
+          <li><strong>Circuit Breaker</strong> — track the error rate and stop sending requests when failures exceed a threshold</li>
+        </ol>
+
+        <div class="pattern-summary">
+          <h4>Pattern: Circuit Breaker</h4>
+          <div class="ps-row"><span class="ps-label">Problem</span> <span>How to prevent a failing service from causing cascading failures?</span></div>
+          <div class="ps-row"><span class="ps-label">Solution</span> <span>Track the error rate of calls to a remote service. When it exceeds a threshold, "trip" the breaker (open state) and reject all calls for a timeout period. After the timeout, allow a trial call. If it succeeds, close the breaker. If not, stay open.</span></div>
+          <div class="ps-row"><span class="ps-label">States</span> <span>Closed (normal) → Open (rejecting) → Half-Open (trial)</span></div>
+          <div class="ps-row"><span class="ps-label">Technologies</span> <span>Netflix Hystrix (JVM), Polly (.NET)</span></div>
+        </div>
+
+        <div class="info-box analogy-box">
+          <p><strong>Analogy:</strong> A circuit breaker in software works like one in your home's electrical panel. When there is too much current (too many errors), the breaker trips and cuts the circuit. After a cooldown, you can try turning it back on.</p>
+        </div>
+
+        <h4 class="subsubsection-title">Recovery Strategies</h4>
+        <p>When a remote call fails or the circuit breaker is open, the service can:</p>
+        <ul>
+          <li>Return an error to the client</li>
+          <li>Return cached data from a previous successful call</li>
+          <li>Return a default or fallback value</li>
+          <li>Omit the non-essential data from the response</li>
+        </ul>
+      </div>
+
+      <!-- 3.2.4 Service Discovery -->
+      <h3 class="subsection-title" id="s3-2-4">Using Service Discovery</h3>
+      <div class="content-section">
+        <p>In a cloud environment, service instances are created and destroyed dynamically. Their network addresses change constantly. <strong>Service discovery</strong> is the mechanism that lets a client find the current network location of a service instance.</p>
+
+        <p>At the center is a <strong>Service Registry</strong>: a database of the network locations of all service instances.</p>
+
+        <h4 class="subsubsection-title">Application-Level Discovery</h4>
+        <p>The services themselves handle registration and discovery:</p>
+        <ul>
+          <li><strong>Self Registration</strong> — each service instance registers itself with the registry on startup and deregisters on shutdown</li>
+          <li><strong>Client-side Discovery</strong> — the client queries the registry and load-balances across available instances</li>
+        </ul>
+        <p>Technologies: Netflix Eureka (registry) + Ribbon (client-side load balancing) + Spring Cloud.</p>
+        <p>Works across platforms, but requires a discovery library for each programming language you use.</p>
+
+        <h4 class="subsubsection-title">Platform-Provided Discovery</h4>
+        <p>The deployment platform handles registration and discovery:</p>
+        <ul>
+          <li><strong>3rd-party Registration</strong> — the platform automatically registers instances</li>
+          <li><strong>Server-side Discovery</strong> — the platform provides a built-in load balancer (e.g., Kubernetes Service, Docker DNS)</li>
+        </ul>
+        <p>No discovery code needed in your services, but it ties you to a specific platform.</p>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Application-Level</th>
+              <th>Platform-Provided</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Registration</td>
+              <td>Self Registration</td>
+              <td>3rd-party Registration</td>
+            </tr>
+            <tr>
+              <td>Discovery</td>
+              <td>Client-side</td>
+              <td>Server-side</td>
+            </tr>
+            <tr>
+              <td>Code required</td>
+              <td>Yes (per language)</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td>Platform dependency</td>
+              <td>Cross-platform</td>
+              <td>Single platform</td>
+            </tr>
+            <tr>
+              <td>Examples</td>
+              <td>Eureka + Ribbon + Spring Cloud</td>
+              <td>Kubernetes, Docker</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="info-box key-point-box">
+          <p><strong>Recommendation:</strong> Use platform-provided service discovery when possible. It requires no code changes and works automatically with your deployment infrastructure.</p>
+        </div>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 3.3 Asynchronous Messaging -->
+      <!-- ================================================================== -->
+      <h2 class="section-title" id="s3-3">3.3 Asynchronous Messaging Pattern</h2>
+
+      <div class="content-section">
+        <p>In the <strong>Messaging</strong> pattern, services communicate by exchanging messages asynchronously. The sender does not wait for a response. Messages flow through <strong>channels</strong>, which may be managed by a message broker or handled directly between services (brokerless).</p>
+
+        <div class="pattern-summary">
+          <h4>Pattern: Messaging</h4>
+          <div class="ps-row"><span class="ps-label">Problem</span> <span>How do services communicate without blocking?</span></div>
+          <div class="ps-row"><span class="ps-label">Solution</span> <span>Services exchange messages asynchronously through message channels.</span></div>
+          <div class="ps-row"><span class="ps-label">Benefit</span> <span>Loose coupling, improved availability, supports all interaction styles.</span></div>
+        </div>
+      </div>
+
+      <!-- 3.3.1 Overview of Messaging -->
+      <h3 class="subsection-title" id="s3-3-1">Overview of Messaging</h3>
+      <div class="content-section">
+        <h4 class="subsubsection-title">Message Structure</h4>
+        <p>A message has two parts:</p>
+        <ul>
+          <li><strong>Header</strong> — metadata: message ID, return address, shard key (for ordering)</li>
+          <li><strong>Body</strong> — the actual data</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Message Types</h4>
+        <p>There are three types of messages:</p>
+        <ul>
+          <li><strong>Document</strong> — contains data only, the receiver decides what to do with it</li>
+          <li><strong>Command</strong> — tells the receiver to perform an operation (like a remote method call)</li>
+          <li><strong>Event</strong> — notifies that something happened in the sender's domain</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Channel Types</h4>
+        <ul>
+          <li><strong>Point-to-point</strong> — delivers each message to exactly one consumer (used for commands)</li>
+          <li><strong>Publish-subscribe</strong> — delivers each message to all subscribed consumers (used for events)</li>
+        </ul>
+      </div>
+
+      <!-- 3.3.2 Implementing Interaction Styles -->
+      <h3 class="subsection-title" id="s3-3-2">Implementing Interaction Styles Using Messaging</h3>
+      <div class="content-section">
+        <p>Messaging is flexible enough to implement all the interaction styles from the taxonomy:</p>
+        <ul>
+          <li><strong>Request / Response</strong> — the client sends a command message and includes a return address; the service sends a reply message to that address</li>
+          <li><strong>One-way Notification</strong> — the client sends a command or document message with no reply expected</li>
+          <li><strong>Publish / Subscribe</strong> — the service publishes event messages to a publish-subscribe channel; all interested services receive them</li>
+          <li><strong>Publish / Async Responses</strong> — the client publishes a message with a reply channel header; interested services process it and send responses back on that channel</li>
+        </ul>
+      </div>
+
+      <!-- 3.3.3 API Specification for Messaging -->
+      <h3 class="subsection-title" id="s3-3-3">Creating an API Specification for a Messaging-Based Service API</h3>
+      <div class="content-section">
+        <p>Unlike REST (Open API) or gRPC (Protocol Buffers), there is no widely adopted standard for documenting messaging-based APIs. You typically create informal documentation that describes:</p>
+        <ul>
+          <li>The message channels the service uses (both incoming and outgoing)</li>
+          <li>The message types and their structure</li>
+          <li>The message format (JSON, Protocol Buffers, etc.)</li>
+        </ul>
+      </div>
+
+      <!-- 3.3.4 Message Broker -->
+      <h3 class="subsection-title" id="s3-3-4">Using a Message Broker</h3>
+      <div class="content-section">
+        <p>A <strong>message broker</strong> is an intermediary through which messages flow. Services send messages to the broker, and the broker delivers them to the intended recipients.</p>
+
+        <h4 class="subsubsection-title">Broker-Based Messaging</h4>
+        <p>Most production systems use a broker. Popular brokers include ActiveMQ, RabbitMQ, Apache Kafka, Amazon Kinesis, and Amazon SQS.</p>
+        <ul>
+          <li><strong>Benefits:</strong> buffering (the sender does not need the receiver to be available), loose coupling between services</li>
+          <li><strong>Drawbacks:</strong> the broker can become a performance bottleneck and a single point of failure; it adds operational complexity</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Brokerless Messaging</h4>
+        <p>In brokerless messaging (e.g., ZeroMQ), services communicate directly without an intermediary.</p>
+        <ul>
+          <li><strong>Benefits:</strong> lower latency, no broker single point of failure</li>
+          <li><strong>Drawbacks:</strong> services need to discover each other, availability is reduced (both sides must be running), guaranteed delivery is harder to implement</li>
+        </ul>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Broker-Based</th>
+              <th>Brokerless</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Coupling</td>
+              <td>Loose (sender and receiver decoupled)</td>
+              <td>Tighter (need direct addresses)</td>
+            </tr>
+            <tr>
+              <td>Buffering</td>
+              <td>Yes (receiver can be offline)</td>
+              <td>No (both sides must be up)</td>
+            </tr>
+            <tr>
+              <td>Latency</td>
+              <td>Higher (extra hop through broker)</td>
+              <td>Lower (direct connection)</td>
+            </tr>
+            <tr>
+              <td>Guaranteed delivery</td>
+              <td>Built-in</td>
+              <td>Hard to achieve</td>
+            </tr>
+            <tr>
+              <td>Operations</td>
+              <td>Broker must be managed</td>
+              <td>Simpler infrastructure</td>
+            </tr>
+            <tr>
+              <td>Examples</td>
+              <td>ActiveMQ, RabbitMQ, Kafka, Kinesis, SQS</td>
+              <td>ZeroMQ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3.3.5 Competing Receivers -->
+      <h3 class="subsection-title" id="s3-3-5">Competing Receivers and Message Ordering</h3>
+      <div class="content-section">
+        <p>To scale message processing, you run multiple instances of a service that all consume from the same channel. These are called <strong>competing receivers</strong>. The problem is that concurrent consumers may process messages out of order.</p>
+
+        <div class="info-box warning-box">
+          <p><strong>Problem:</strong> If two messages for the same entity (e.g., "create order" then "update order") are processed by different instances concurrently, the update may be processed before the create, causing errors.</p>
+        </div>
+
+        <h4 class="subsubsection-title">Sharded (Partitioned) Channels</h4>
+        <p>The solution is <strong>sharded channels</strong> (also called partitioned channels). Each message has a <strong>shard key</strong> (e.g., the order ID). The broker hashes the key to assign the message to a specific shard. Each shard is consumed by exactly one instance.</p>
+
+        <p>In Kafka terminology, this is called <strong>Consumer Groups</strong>: the broker assigns each partition to exactly one consumer in the group.</p>
+
+        <p>This guarantees <strong>per-shard-key ordering</strong> while still enabling horizontal scaling.</p>
+
+        <div class="info-box analogy-box">
+          <p><strong>Analogy:</strong> Think of a post office with multiple counters. Instead of random assignment, each counter handles a specific ZIP code range. All letters for the same ZIP always go to the same counter, so they are processed in order.</p>
+        </div>
+      </div>
+
+      <!-- 3.3.6 Handling Duplicate Messages -->
+      <h3 class="subsection-title" id="s3-3-6">Handling Duplicate Messages</h3>
+      <div class="content-section">
+        <p>Message brokers typically guarantee <strong>at-least-once delivery</strong>: a message will be delivered, but it might be delivered more than once if a failure occurs. Your service must handle duplicates.</p>
+
+        <h4 class="subsubsection-title">Strategy 1: Idempotent Handlers</h4>
+        <p>If your message handler is naturally <strong>idempotent</strong> (processing the same message twice has the same effect as processing it once), duplicates are harmless. This only works if the broker also preserves ordering on redelivery.</p>
+
+        <h4 class="subsubsection-title">Strategy 2: Message Tracking</h4>
+        <p>Record each processed message ID in a <code>PROCESSED_MESSAGES</code> table as part of the same database transaction that performs the business logic. If a duplicate arrives, the INSERT into the tracking table fails (duplicate key), and the handler skips it.</p>
+
+        <div class="info-box key-point-box">
+          <p><strong>Best practice:</strong> When your logic is not naturally idempotent, use message tracking. It guarantees exactly-once processing as long as the tracking and business logic share the same transaction.</p>
+        </div>
+      </div>
+
+      <!-- 3.3.7 Transactional Messaging -->
+      <h3 class="subsection-title" id="s3-3-7">Transactional Messaging</h3>
+      <div class="content-section">
+        <p>A common need is to <strong>atomically update a database and publish a message</strong>. For example, when creating an order, you want to insert the order into the database and publish an "OrderCreated" event. If either operation fails alone, the system becomes inconsistent.</p>
+
+        <div class="info-box warning-box">
+          <p><strong>Problem:</strong> Distributed transactions (two-phase commit) across the database and message broker are not a viable solution for modern microservices. They are complex, slow, and many brokers do not support them.</p>
+        </div>
+
+        <h4 class="subsubsection-title">Transactional Outbox Pattern</h4>
+        <div class="pattern-summary">
+          <h4>Pattern: Transactional Outbox</h4>
+          <div class="ps-row"><span class="ps-label">Problem</span> <span>How to atomically update the database and publish a message?</span></div>
+          <div class="ps-row"><span class="ps-label">Solution</span> <span>Insert the message into an OUTBOX table as part of the same local ACID database transaction that performs the business update. A separate MessageRelay process reads the OUTBOX and publishes messages to the broker.</span></div>
+        </div>
+
+        <h4 class="subsubsection-title">MessageRelay Implementations</h4>
+        <p>The MessageRelay component reads messages from the OUTBOX table and publishes them to the broker. Two approaches:</p>
+
+        <p><strong>Polling Publisher:</strong> The relay periodically queries the OUTBOX table for unpublished messages. Simple to implement, but the polling adds load to the database. It may not work well with NoSQL databases that lack efficient querying.</p>
+
+        <p><strong>Transaction Log Tailing:</strong> The relay reads the database's transaction log (also called commit log or WAL). When an INSERT into the OUTBOX is found in the log, the relay publishes the corresponding message. This is more sophisticated but very performant because it uses the database's built-in change capture.</p>
+
+        <p>Technologies for log tailing: Debezium, Eventuate Tram, DynamoDB Streams.</p>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Polling Publisher</th>
+              <th>Transaction Log Tailing</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Complexity</td>
+              <td>Simple</td>
+              <td>More complex</td>
+            </tr>
+            <tr>
+              <td>Performance</td>
+              <td>DB polling is expensive at scale</td>
+              <td>High performance</td>
+            </tr>
+            <tr>
+              <td>NoSQL support</td>
+              <td>May not work well</td>
+              <td>Works (via native streams)</td>
+            </tr>
+            <tr>
+              <td>Technologies</td>
+              <td>Custom implementation</td>
+              <td>Debezium, Eventuate Tram, DynamoDB Streams</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3.3.8 Libraries and Frameworks -->
+      <h3 class="subsection-title" id="s3-3-8">Libraries and Frameworks for Messaging</h3>
+      <div class="content-section">
+        <p>Rather than using broker client libraries directly, use higher-level frameworks that abstract away the details of messaging infrastructure. These frameworks handle message serialization, channel management, and transactional outbox concerns so you can focus on business logic.</p>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- 3.4 Availability -->
+      <!-- ================================================================== -->
+      <h2 class="section-title" id="s3-4">3.4 Using Asynchronous Messaging to Improve Availability</h2>
+
+      <div class="content-section">
+        <p>The IPC mechanism you choose has a direct effect on your system's availability. This section explains why synchronous communication hurts availability and how to fix it.</p>
+      </div>
+
+      <!-- 3.4.1 Sync reduces availability -->
+      <h3 class="subsection-title" id="s3-4-1">Synchronous Communication Reduces Availability</h3>
+      <div class="content-section">
+        <p>When service A calls service B synchronously, A is available only if B is also available. If B also calls service C, then A is available only if both B and C are available. The overall availability is the <strong>product</strong> of all dependent service availabilities.</p>
+
+        <div class="info-box warning-box">
+          <p><strong>Example:</strong> If each service is 99.5% available and you have a chain of three synchronous calls, the combined availability drops to 0.995 &times; 0.995 &times; 0.995 &asymp; 98.5%. With more services, it gets worse quickly.</p>
+        </div>
+      </div>
+
+      <!-- 3.4.2 Eliminating Sync -->
+      <h3 class="subsection-title" id="s3-4-2">Eliminating Synchronous Interaction</h3>
+      <div class="content-section">
+        <p>There are three strategies to eliminate synchronous dependencies and improve availability:</p>
+
+        <h4 class="subsubsection-title">Strategy 1: Use Asynchronous Interaction Styles End-to-End</h4>
+        <p>Replace synchronous request/response with asynchronous messaging throughout the system. The service that receives the initial request sends it as a message and responds immediately. Downstream processing happens asynchronously.</p>
+        <p>This is not always possible, especially for external REST APIs that clients expect to return a result immediately.</p>
+
+        <h4 class="subsubsection-title">Strategy 2: Replicate Data Locally</h4>
+        <p>Each service maintains a local copy of the data it needs from other services. It subscribes to events from those services and keeps its copy up to date. When it needs the data, it reads from its local copy instead of making a synchronous call.</p>
+        <ul>
+          <li><strong>Benefit:</strong> No synchronous dependency at query time</li>
+          <li><strong>Drawback:</strong> Can require storing large amounts of data; does not solve the problem for write operations</li>
+        </ul>
+
+        <h4 class="subsubsection-title">Strategy 3: Return Response Immediately, Finish Processing Later</h4>
+        <p>The service creates the entity in a <strong>PENDING</strong> state and returns a response immediately to the client. It then validates and completes the operation asynchronously using a saga. When the saga finishes, the entity moves to a final state (e.g., APPROVED or REJECTED).</p>
+        <ul>
+          <li><strong>Benefit:</strong> High availability because the initial call has no synchronous dependencies</li>
+          <li><strong>Tradeoff:</strong> The client must handle the PENDING state. It needs to either poll for the final result or receive a notification when processing completes.</li>
+        </ul>
+
+        <div class="info-box analogy-box">
+          <p><strong>Analogy:</strong> Think of placing an order at a busy restaurant. The waiter does not go to the kitchen and wait for your food before confirming your order. Instead, the waiter writes down your order (PENDING), confirms it immediately, and brings the food later when it is ready.</p>
+        </div>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>How It Works</th>
+              <th>Limitation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Async end-to-end</td>
+              <td>Replace all sync calls with messaging</td>
+              <td>Not always possible for external APIs</td>
+            </tr>
+            <tr>
+              <td>Replicate data locally</td>
+              <td>Subscribe to events, keep local copy</td>
+              <td>Large data storage; does not solve writes</td>
+            </tr>
+            <tr>
+              <td>Respond immediately + saga</td>
+              <td>Create in PENDING state, process via saga</td>
+              <td>Client must handle PENDING state</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- Takeaways -->
+      <!-- ================================================================== -->
+      <section class="takeaways">
+        <h3>Key Takeaways</h3>
+        <ul>
+          <li>Interaction styles are classified by cardinality (one-to-one vs. one-to-many) and timing (synchronous vs. asynchronous). This taxonomy guides your IPC choice.</li>
+          <li>Use API-first design and Semantic Versioning to keep APIs stable. Apply the Robustness Principle for backward-compatible evolution.</li>
+          <li>Prefer cross-language message formats (JSON or Protocol Buffers) even in single-language projects.</li>
+          <li>REST is simple and familiar but limited to request/response. gRPC supports rich operations and streaming but has weaker browser support.</li>
+          <li>Always combine network timeouts, outstanding request limits, and a Circuit Breaker for synchronous calls.</li>
+          <li>Use platform-provided service discovery (Kubernetes, Docker) when possible to avoid per-language discovery libraries.</li>
+          <li>Asynchronous messaging supports all interaction styles and improves availability by decoupling services.</li>
+          <li>Use sharded (partitioned) channels to maintain message ordering while scaling consumers horizontally.</li>
+          <li>Handle duplicate messages with idempotent handlers or a PROCESSED_MESSAGES tracking table.</li>
+          <li>Use the Transactional Outbox pattern to atomically update the database and publish messages. Prefer Transaction Log Tailing over Polling Publisher for performance at scale.</li>
+          <li>Synchronous calls multiply availability risk. Eliminate them with end-to-end async messaging, local data replication, or a "respond immediately, finish later" saga approach.</li>
+        </ul>
+      </section>
+
+      <!-- Chapter Nav -->
+      <div class="chapter-nav">
+        <router-link to="/sa/microservices/ch2" class="prev">&larr; Chapter 2</router-link>
+        <router-link to="/sa/microservices/ch4" class="next">Chapter 4 &rarr;</router-link>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<script setup></script>
