@@ -18,8 +18,20 @@ const router = createRouter({
     { path: '/sa/microservices/ch3', component: () => import('@/pages/sa/microservices/Ch3.vue') },
     { path: '/sa/microservices/ch4', component: () => import('@/pages/sa/microservices/Ch4.vue') },
     { path: '/sa/microservices/ch5', component: () => import('@/pages/sa/microservices/Ch5.vue') },
+    { path: '/sa/microservices/ch6', component: () => import('@/pages/sa/microservices/Ch6.vue') },
     { path: '/sa/microservices/ch7', component: () => import('@/pages/sa/microservices/Ch7.vue') },
+    { path: '/sa/microservices/ch8', component: () => import('@/pages/sa/microservices/Ch8.vue') },
+
+    // Fundamentals of Software Architecture — Part I
     { path: '/sa/fundamentals', component: () => import('@/pages/sa/fundamentals/FundamentalsHome.vue') },
+    { path: '/sa/fundamentals/ch1', component: () => import('@/pages/sa/fundamentals/Ch1.vue') },
+    { path: '/sa/fundamentals/ch2', component: () => import('@/pages/sa/fundamentals/Ch2.vue') },
+    { path: '/sa/fundamentals/ch3', component: () => import('@/pages/sa/fundamentals/Ch3.vue') },
+    { path: '/sa/fundamentals/ch4', component: () => import('@/pages/sa/fundamentals/Ch4.vue') },
+    { path: '/sa/fundamentals/ch5', component: () => import('@/pages/sa/fundamentals/Ch5.vue') },
+    { path: '/sa/fundamentals/ch6', component: () => import('@/pages/sa/fundamentals/Ch6.vue') },
+    { path: '/sa/fundamentals/ch7', component: () => import('@/pages/sa/fundamentals/Ch7.vue') },
+    { path: '/sa/fundamentals/ch8', component: () => import('@/pages/sa/fundamentals/Ch8.vue') },
 
     // Network & System Administration
     { path: '/nsa', component: () => import('@/pages/nsa/NSAHome.vue') },

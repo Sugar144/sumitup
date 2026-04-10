@@ -1,0 +1,216 @@
+<template>
+  <div>
+  <header class="chapter-header">
+    <div class="breadcrumb">
+      <router-link to="/">Study Guide</router-link> &rsaquo;
+      <router-link to="/sa">SA</router-link> &rsaquo;
+      <router-link to="/sa/fundamentals">Fundamentals</router-link> &rsaquo;
+      Chapter 8
+    </div>
+    <h1>Chapter 8: Component-Based Thinking</h1>
+    <p class="chapter-desc">How to define the logical building blocks of a system — from identifying core components to managing coupling through the Law of Demeter.</p>
+    <div class="stats-bar">
+      <span class="stat-badge">Logical vs Physical Architecture</span>
+      <span class="stat-badge">Component Discovery</span>
+      <span class="stat-badge">Static &amp; Temporal Coupling</span>
+      <span class="stat-badge">Law of Demeter</span>
+    </div>
+  </header>
+
+  <div class="page-container">
+
+    <div class="toc">
+      <h2>Table of Contents</h2>
+      <ol>
+        <li><a href="#s8-1">Defining Logical Components</a></li>
+        <li><a href="#s8-2">Logical vs Physical Architecture</a></li>
+        <li><a href="#s8-3">Creating a Logical Architecture</a></li>
+        <li><a href="#s8-4">Identifying Core Components</a></li>
+        <li><a href="#s8-5">Component Coupling</a></li>
+        <li><a href="#s8-6">The Law of Demeter</a></li>
+        <li><a href="#s8-7">Case Study: Going, Going, Gone</a></li>
+        <li><a href="#takeaways">Key Takeaways</a></li>
+      </ol>
+    </div>
+
+    <h2 class="section-title" id="s8-1">Defining Logical Components</h2>
+    <div class="content-section">
+      <p>A <strong>logical component</strong> is a named, bounded grouping of functionality within the architecture. It is the unit of architecture above a class or function and below a service or deployment unit. In code, logical components are manifested as packages, namespaces, or directories.</p>
+
+      <div class="info-box note-box">
+        <p><strong>Analogy:</strong> In a car, the logical components are: Engine, Transmission, Braking System, Electrical System, Body. These are distinct groupings of related parts with clear responsibilities. The physical architecture (where parts are physically located in the car) can differ from the logical architecture, but they must align closely.</p>
+      </div>
+
+      <p>The leaf nodes of a directory structure typically represent logical components. For example:</p>
+      <ul>
+        <li><code>order_entry/ordering/payment</code> → Payment Processing component</li>
+        <li><code>order_entry/processing/fulfillment</code> → Order Fulfillment component</li>
+      </ul>
+      <p>An architect can analyze directory structures to understand the system's logical architecture without running the code.</p>
+    </div>
+
+    <h2 class="section-title" id="s8-2">Logical vs Physical Architecture</h2>
+    <div class="content-section">
+      <table class="comparison-table">
+        <thead><tr><th>Aspect</th><th>Logical Architecture</th><th>Physical Architecture</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>What it shows</strong></td>
+            <td>Components and their interactions. What the system does and how functionality is organized.</td>
+            <td>Services, databases, UIs, networks, deployment units. How the system is physically deployed.</td>
+          </tr>
+          <tr>
+            <td><strong>What it doesn't show</strong></td>
+            <td>Databases, services, physical artifacts</td>
+            <td>Not always clear where specific functionality lives if spread across services</td>
+          </tr>
+          <tr>
+            <td><strong>Independence</strong></td>
+            <td>Generally independent of physical choices. Same logical architecture could be deployed as a monolith or microservices.</td>
+            <td>Tied to deployment decisions (containers, cloud, monolith)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box warning-box">
+        <p><strong>Common mistake:</strong> Many architects skip the logical architecture and go directly to physical (services, databases). This produces unstructured, hard-to-maintain systems because no one knows where specific functionality lives or how it interacts. Always start with logical — determine <em>what</em> the components are before deciding <em>how</em> they're deployed.</p>
+      </div>
+    </div>
+
+    <h2 class="section-title" id="s8-3">Creating a Logical Architecture</h2>
+    <div class="content-section">
+      <p>Creating logical architecture is an iterative cycle:</p>
+      <ol>
+        <li><strong>Identify initial core components</strong> — a best guess at the major functional groupings</li>
+        <li><strong>Assign user stories to components</strong> — does each story fit naturally into a component?</li>
+        <li><strong>Analyze roles and responsibilities</strong> — does the assignment make semantic sense?</li>
+        <li><strong>Analyze architectural characteristics</strong> — does the component structure support the required "-ilities"?</li>
+        <li><strong>Restructure as needed</strong> — combine, split, or rename components</li>
+        <li><strong>Repeat</strong> — this loop never fully stops; architecture evolves with the system</li>
+      </ol>
+
+      <p>This process applies to both new (greenfield) systems and to significant feature additions in existing systems.</p>
+    </div>
+
+    <h2 class="section-title" id="s8-4">Identifying Core Components</h2>
+    <div class="content-section">
+      <p>Two starting strategies depending on the problem type:</p>
+
+      <table class="comparison-table">
+        <thead><tr><th>Strategy</th><th>When to use</th><th>Starting point</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Actor/Action approach</strong></td>
+            <td>Traditional use-case-driven systems</td>
+            <td>Identify actors (users, systems) and their actions. Each major workflow may become a component.</td>
+          </tr>
+          <tr>
+            <td><strong>Event storming (DDD)</strong></td>
+            <td>Distributed, event-driven systems</td>
+            <td>Identify domain events first, then the workflows and aggregates that produce/consume them. Events reveal natural component boundaries.</td>
+          </tr>
+          <tr>
+            <td><strong>Workflow approach</strong></td>
+            <td>Systems with complex business processes</td>
+            <td>Map major business workflows first, then identify the components needed to implement each workflow.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Don't try to get the initial components perfect. A reasonable first guess is enough — the iterative cycle will refine them. Over-engineering the initial design wastes time and creates false confidence.</p>
+
+      <div class="info-box warning-box">
+        <p><strong>Entity Trap antipattern:</strong> Directly mapping database entities to components (User component, Order component, Product component). This creates an anemic architecture — components that are just data containers with no behavior. Entity-centric thinking mimics the object-relational impedance mismatch problem at the architectural level.</p>
+      </div>
+    </div>
+
+    <h2 class="section-title" id="s8-5">Component Coupling</h2>
+    <div class="content-section">
+      <p>Components coupled together become harder to maintain, test, and evolve independently. Two types of coupling to manage:</p>
+
+      <table class="comparison-table">
+        <thead><tr><th>Type</th><th>Definition</th><th>Detection</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Static coupling (afferent/efferent)</strong></td>
+            <td>Compile-time or deploy-time dependencies between components. Service A calls Service B = static coupling.</td>
+            <td>Code analysis tools, dependency graphs, ArchUnit. Easy to detect and measure.</td>
+          </tr>
+          <tr>
+            <td><strong>Temporal coupling</strong></td>
+            <td>Components must interact in a specific time order for correct behavior. Order Placement must run before Order Shipment.</td>
+            <td>Hard to detect with current tooling. Usually identified through design documents or failure conditions.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>High afferent coupling</strong> on a component means many things depend on it — changing it is risky and requires careful coordination. <strong>High efferent coupling</strong> means a component depends on many others — it's vulnerable to changes in those dependencies.</p>
+    </div>
+
+    <h2 class="section-title" id="s8-6">The Law of Demeter</h2>
+    <div class="content-section">
+      <div class="pattern-summary">
+        <h4>Law of Demeter (Principle of Least Knowledge)</h4>
+        <div class="ps-row"><span class="ps-label">Origin:</span> <span>Named after the Greek goddess of grain who "had no idea what people did with her grain" — she was decoupled from consumers.</span></div>
+        <div class="ps-row"><span class="ps-label">Rule:</span> <span>A component should have limited knowledge of other components. Only interact with immediate dependencies, not their transitive dependencies.</span></div>
+        <div class="ps-row"><span class="ps-label">Implication:</span> <span>The less a component knows, the fewer changes will break it.</span></div>
+      </div>
+
+      <h4 class="subsubsection-title">Applied Example: Order Placement</h4>
+      <p>Before applying the Law of Demeter, <code>OrderPlacement</code> knows about:</p>
+      <ul>
+        <li>Inventory Management (decrement inventory)</li>
+        <li>Supplier Ordering (order more stock if low)</li>
+        <li>Item Pricing (adjust price if low supply)</li>
+        <li>Email Notification (send order confirmation)</li>
+      </ul>
+      <p>That's a lot of knowledge — and tight coupling to 4 components. After applying the Law of Demeter:</p>
+      <ul>
+        <li><code>OrderPlacement</code> only knows about <strong>Inventory Management</strong></li>
+        <li><strong>Inventory Management</strong> handles the knowledge about supplier ordering and pricing when stock is low</li>
+        <li><code>OrderPlacement</code> no longer needs to know the downstream consequences of inventory changes</li>
+      </ul>
+
+      <div class="info-box key-point-box">
+        <p><strong>More knowledge = tighter coupling.</strong> Each piece of knowledge a component holds about the rest of the system is a coupling point. Reducing knowledge reduces coupling. The Law of Demeter is a practical heuristic for distributing knowledge to minimize coupling breadth.</p>
+      </div>
+    </div>
+
+    <h2 class="section-title" id="s8-7">Case Study: Going, Going, Gone</h2>
+    <div class="content-section">
+      <p>An online auction system with bidders, auction monitors, and bid tracking. The challenge: discovering the right components from the requirements.</p>
+
+      <p>Initial domain analysis identifies:</p>
+      <ul>
+        <li><strong>Bid Capture</strong> — accepts bids, validates against current state</li>
+        <li><strong>Bid Tracking</strong> — tracks all bids for history and audit</li>
+        <li><strong>Bid Analytics</strong> — analyzes bidding patterns in real time</li>
+        <li><strong>Auction Management</strong> — starts, pauses, ends auctions</li>
+        <li><strong>Item Management</strong> — catalog of items for auction</li>
+        <li><strong>User Management</strong> — bidders and administrators</li>
+      </ul>
+
+      <p>Architectural characteristics analysis: the system needs high availability and scalability during peak auction times. Bid Capture and Bid Tracking must be highly available — any downtime during an auction loses bids. Bid Analytics can tolerate more latency. This difference in characteristics might justify separating them into different quanta (if this were a distributed architecture).</p>
+    </div>
+
+    <div class="takeaways" id="takeaways">
+      <h3>Key Takeaways — Chapter 8</h3>
+      <ul>
+        <li><strong>Logical components</strong> are named groupings of related functionality. In code: packages, namespaces, directories. They are the primary structural unit of architecture.</li>
+        <li><strong>Logical architecture</strong> (what the system does) should be designed before <strong>physical architecture</strong> (how it's deployed). Logical architecture guides structure; physical architecture maps to deployment decisions.</li>
+        <li>Component identification is an iterative cycle: identify → assign stories → analyze roles → analyze characteristics → restructure → repeat.</li>
+        <li>Avoid the <strong>Entity Trap</strong>: mapping database tables directly to components creates anemic, behavior-free architectures.</li>
+        <li><strong>Static coupling</strong> (afferent/efferent) is measurable with tools. <strong>Temporal coupling</strong> (order dependencies) is hard to detect — look for it in design documents and failure conditions.</li>
+        <li>The <strong>Law of Demeter</strong>: limit each component's knowledge of the rest of the system. More knowledge = tighter coupling. Redistribute knowledge to minimize coupling breadth.</li>
+        <li>Components with different architectural characteristics requirements may need to become separate quanta (especially in distributed architectures).</li>
+      </ul>
+    </div>
+
+    <div class="chapter-nav">
+      <router-link to="/sa/fundamentals/ch7" class="prev">&larr; Chapter 7</router-link>
+      <router-link to="/sa/fundamentals" class="next">Book Index &rarr;</router-link>
+    </div>
+  </div>
+  </div>
+</template>
+<script setup></script>

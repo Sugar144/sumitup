@@ -15,7 +15,7 @@
     <section style="margin: 2rem 0;">
       <h2 style="color: var(--blue-700); font-size: 1.3rem; margin-bottom: 0.5rem;">About This Guide</h2>
       <p>This study guide covers validated key concepts extracted from selected chapters of <em>Microservices Patterns</em> by Chris Richardson. It is designed for efficient learning and review. Each chapter summary preserves the original book numbering and explains concepts in a shorter, clearer way.</p>
-      <p>Chapters covered: 1, 2, 3, 4, 5, and 7.</p>
+      <p>Chapters covered: 1, 2, 3, 4, 5, 6, 7, and 8.</p>
     </section>
 
     <div class="chapter-grid">
@@ -49,10 +49,22 @@
         <p class="card-desc">Transaction Script vs. Domain Model, DDD aggregates, aggregate rules, domain events, and service architecture with Kitchen and Order services.</p>
       </router-link>
 
+      <router-link to="/sa/microservices/ch6" class="chapter-card">
+        <div class="card-number">Chapter 6</div>
+        <div class="card-title">Developing Business Logic with Event Sourcing</div>
+        <p class="card-desc">Event sourcing pattern, traditional persistence problems, optimistic locking, snapshots, idempotent processing, saga integration.</p>
+      </router-link>
+
       <router-link to="/sa/microservices/ch7" class="chapter-card">
         <div class="card-number">Chapter 7</div>
         <div class="card-title">Implementing Queries in a Microservice Architecture</div>
         <p class="card-desc">The API Composition pattern, CQRS pattern, designing CQRS views, and a DynamoDB implementation example.</p>
+      </router-link>
+
+      <router-link to="/sa/microservices/ch8" class="chapter-card">
+        <div class="card-number">Chapter 8</div>
+        <div class="card-title">External API Patterns</div>
+        <p class="card-desc">API gateway pattern, Backends for Frontends (BFF), edge functions, reactive composition, GraphQL implementation.</p>
       </router-link>
     </div>
 
@@ -64,7 +76,9 @@
         <li><strong>Chapter 3</strong> covers how services communicate — synchronously (REST, gRPC) or asynchronously (messaging).</li>
         <li><strong>Chapter 4</strong> solves the data consistency problem across services using the Saga pattern.</li>
         <li><strong>Chapter 5</strong> shows how to design business logic using aggregates and domain events.</li>
+        <li><strong>Chapter 6</strong> covers event sourcing — storing aggregates as event sequences for reliable event publishing, full history, and temporal queries.</li>
         <li><strong>Chapter 7</strong> addresses querying data spread across services using API Composition and CQRS.</li>
+        <li><strong>Chapter 8</strong> shows how to design external APIs using the API Gateway and Backends for Frontends patterns.</li>
       </ul>
     </section>
   </div>
