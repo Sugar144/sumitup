@@ -36,8 +36,8 @@ const router = createRouter({
     // Network & System Administration
     { path: '/nsa', component: () => import('@/pages/nsa/NSAHome.vue') },
     { path: '/nsa/intro', component: () => import('@/pages/nsa/intro/IntroSysAdmin.vue') },
-    { path: '/nsa/user-admin', component: () => import('@/pages/nsa/user-admin/UserAdmin.vue') },
     { path: '/nsa/server-admin', component: () => import('@/pages/nsa/server-admin/ServerAdmin.vue') },
+    { path: '/nsa/user-admin', component: () => import('@/pages/nsa/user-admin/UserAdmin.vue') },
     { path: '/nsa/network-admin', component: () => import('@/pages/nsa/network-admin/NetworkAdmin.vue') },
     { path: '/nsa/data-admin', component: () => import('@/pages/nsa/data-admin/DataAdmin.vue') },
 
