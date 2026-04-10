@@ -22,16 +22,16 @@
         <p class="card-desc">IT systems within organisations, department structure, key roles (server admin, user admin, network admin, data manager, IT manager), and role overlapping.</p>
       </router-link>
 
-      <router-link to="/nsa/user-admin" class="chapter-card" style="border-left-color: var(--accent-teal);">
-        <div class="card-number">Module 3</div>
-        <div class="card-title">User Administration</div>
-        <p class="card-desc">User environment design, access control (AAA, ACL, SSO), IT system design patterns, application distribution, workstation configuration, maintenance, training, and help desk.</p>
-      </router-link>
-
       <router-link to="/nsa/server-admin" class="chapter-card" style="border-left-color: var(--accent-teal);">
         <div class="card-number">Module 2</div>
         <div class="card-title">Server Administration</div>
         <p class="card-desc">Physical and virtual servers, containers (Docker, Kubernetes), cloud services (IaaS, PaaS, SaaS), clusters, storage systems, RAID, backups, high availability, and security.</p>
+      </router-link>
+
+      <router-link to="/nsa/user-admin" class="chapter-card" style="border-left-color: var(--accent-teal);">
+        <div class="card-number">Module 3</div>
+        <div class="card-title">User Administration</div>
+        <p class="card-desc">User environment design, access control (AAA, ACL, SSO), IT system design patterns, application distribution, workstation configuration, maintenance, training, and help desk.</p>
       </router-link>
 
       <router-link to="/nsa/network-admin" class="chapter-card" style="border-left-color: var(--accent-teal);">
